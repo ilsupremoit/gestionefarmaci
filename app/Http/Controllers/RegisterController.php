@@ -20,6 +20,7 @@ class RegisterController extends Controller
         if (Auth::check()) {
             return redirect()->route('login');
         }
+
         return view('auth.register');
     }
 
@@ -30,31 +31,29 @@ class RegisterController extends Controller
     public function register(Request $request)
     {
         $request->validate([
-            'nome'          => ['required', 'string', 'max:50'],
-            'cognome'       => ['required', 'string', 'max:50'],
-            'email'         => ['required', 'email', 'max:100', 'unique:utenti,email'],
-            'password'      => ['required', 'confirmed', Password::min(8)->letters()->numbers()],
-            'ruolo'         => ['required', 'in:paziente,medico,familiare'],
-            'telefono'      => ['nullable', 'string', 'max:20'],
-            // Campi extra solo per paziente
-            'data_nascita'  => ['nullable', 'required_if:ruolo,paziente', 'date'],
-            'indirizzo'     => ['nullable', 'string', 'max:150'],
+            'nome'         => ['required', 'string', 'max:50'],
+            'cognome'      => ['required', 'string', 'max:50'],
+            'email'        => ['required', 'email', 'max:100', 'unique:users,email'],
+            'password'     => ['required', 'confirmed', Password::min(8)->letters()->numbers()],
+            'ruolo'        => ['required', 'in:paziente,medico,familiare'],
+            'telefono'     => ['nullable', 'string', 'max:20'],
+            'data_nascita' => ['nullable', 'required_if:ruolo,paziente', 'date'],
+            'indirizzo'    => ['nullable', 'string', 'max:150'],
         ], [
-            'nome.required'         => 'Il nome è obbligatorio.',
-            'cognome.required'      => 'Il cognome è obbligatorio.',
-            'email.required'        => 'L\'email è obbligatoria.',
-            'email.email'           => 'Inserisci un\'email valida.',
-            'email.unique'          => 'Questa email è già registrata.',
-            'password.required'     => 'La password è obbligatoria.',
-            'password.confirmed'    => 'Le password non coincidono.',
-            'password.min'          => 'La password deve avere almeno 8 caratteri.',
-            'ruolo.required'        => 'Seleziona un ruolo.',
-            'ruolo.in'              => 'Ruolo non valido.',
+            'nome.required'            => 'Il nome è obbligatorio.',
+            'cognome.required'         => 'Il cognome è obbligatorio.',
+            'email.required'           => "L'email è obbligatoria.",
+            'email.email'              => "Inserisci un'email valida.",
+            'email.unique'             => 'Questa email è già registrata.',
+            'password.required'        => 'La password è obbligatoria.',
+            'password.confirmed'       => 'Le password non coincidono.',
+            'ruolo.required'           => 'Seleziona un ruolo.',
+            'ruolo.in'                 => 'Ruolo non valido.',
             'data_nascita.required_if' => 'La data di nascita è obbligatoria per i pazienti.',
-            'data_nascita.date'     => 'Data di nascita non valida.',
+            'data_nascita.date'        => 'Data di nascita non valida.',
         ]);
 
-        // Transazione: crea utente + eventuale paziente in modo atomico
+        // Transazione atomica: user + eventuale paziente
         DB::transaction(function () use ($request) {
             $user = User::create([
                 'nome'     => $request->nome,
@@ -65,7 +64,6 @@ class RegisterController extends Controller
                 'telefono' => $request->telefono,
             ]);
 
-            // Se il ruolo è paziente, crea il record aggiuntivo
             if ($request->ruolo === 'paziente') {
                 Paziente::create([
                     'id_utente'    => $user->id,

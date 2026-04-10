@@ -8,30 +8,30 @@ return new class extends Migration
 {
     public function up(): void
     {
-        // Tabella principale utenti (sostituisce la default 'users' di Laravel)
-        Schema::create('utenti', function (Blueprint $table) {
+        // Tabella principale utenti — nome standard Laravel: users
+        Schema::create('users', function (Blueprint $table) {
             $table->id();
             $table->string('nome', 50);
             $table->string('cognome', 50);
             $table->string('email', 100)->unique();
+            $table->timestamp('email_verified_at')->nullable();
             $table->string('password', 255);
             $table->enum('ruolo', ['paziente', 'medico', 'familiare', 'admin']);
             $table->string('telefono', 20)->nullable();
-            $table->rememberToken(); // necessario per Auth::attempt() con remember me
-            $table->timestamp('created_at')->useCurrent();
-            $table->timestamp('updated_at')->nullable();
+            $table->rememberToken();
+            $table->timestamps(); // created_at + updated_at
         });
 
-        // Tabella pazienti — estende utenti con dati medici
+        // Tabella pazienti — estende users con dati medici
         Schema::create('pazienti', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('id_utente')->unique()->constrained('utenti')->cascadeOnDelete();
+            $table->foreignId('id_utente')->unique()->constrained('users')->cascadeOnDelete();
             $table->date('data_nascita')->nullable();
             $table->string('indirizzo', 150)->nullable();
             $table->text('note_mediche')->nullable();
         });
 
-        // Tabella farmaci
+        // Farmaci
         Schema::create('farmaci', function (Blueprint $table) {
             $table->id();
             $table->string('nome', 100);
@@ -40,18 +40,18 @@ return new class extends Migration
             $table->text('note')->nullable();
         });
 
-        // Relazione medici ↔ pazienti
+        // Medici ↔ Pazienti
         Schema::create('medici_pazienti', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('id_medico')->constrained('utenti')->cascadeOnDelete();
+            $table->foreignId('id_medico')->constrained('users')->cascadeOnDelete();
             $table->foreignId('id_paziente')->constrained('pazienti')->cascadeOnDelete();
             $table->unique(['id_medico', 'id_paziente']);
         });
 
-        // Relazione familiari ↔ pazienti
+        // Familiari ↔ Pazienti
         Schema::create('familiari_pazienti', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('id_familiare')->constrained('utenti')->cascadeOnDelete();
+            $table->foreignId('id_familiare')->constrained('users')->cascadeOnDelete();
             $table->foreignId('id_paziente')->constrained('pazienti')->cascadeOnDelete();
             $table->string('grado_parentela', 30)->nullable();
             $table->unique(['id_familiare', 'id_paziente']);
@@ -74,7 +74,7 @@ return new class extends Migration
         Schema::create('terapie', function (Blueprint $table) {
             $table->id();
             $table->foreignId('id_paziente')->constrained('pazienti')->cascadeOnDelete();
-            $table->foreignId('id_medico')->constrained('utenti')->cascadeOnDelete();
+            $table->foreignId('id_medico')->constrained('users')->cascadeOnDelete();
             $table->foreignId('id_farmaco')->constrained('farmaci')->cascadeOnDelete();
             $table->date('data_inizio');
             $table->date('data_fine')->nullable();
@@ -116,7 +116,7 @@ return new class extends Migration
         // Notifiche
         Schema::create('notifiche', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('id_utente')->constrained('utenti')->cascadeOnDelete();
+            $table->foreignId('id_utente')->constrained('users')->cascadeOnDelete();
             $table->string('titolo', 100);
             $table->text('messaggio');
             $table->enum('tipo', ['promemoria','allarme','errore','info'])->default('info');
@@ -124,7 +124,7 @@ return new class extends Migration
             $table->dateTime('data_invio')->useCurrent();
         });
 
-        // Tabella sessioni Laravel
+        // Sessioni Laravel
         Schema::create('sessions', function (Blueprint $table) {
             $table->string('id')->primary();
             $table->foreignId('user_id')->nullable()->index();
@@ -156,6 +156,6 @@ return new class extends Migration
         Schema::dropIfExists('medici_pazienti');
         Schema::dropIfExists('farmaci');
         Schema::dropIfExists('pazienti');
-        Schema::dropIfExists('utenti');
+        Schema::dropIfExists('users');
     }
 };
