@@ -9,7 +9,12 @@ use App\Http\Controllers\Admin\DashboardController as AdminDashboard;
 use Illuminate\Support\Facades\Route;
 
 // ── Redirect radice ───────────────────────────────────
-Route::get('/', fn() => redirect()->route('login'));
+Route::get('/', function () {
+    if (Auth::check()) {
+        return redirect()->route(Auth::user()->ruolo . '.dashboard');
+    }
+    return redirect()->route('login');
+});
 
 // ── Auth (solo per guest) ─────────────────────────────
 Route::middleware('guest')->group(function () {

@@ -135,7 +135,6 @@
 
 <aside class="sidebar">
     <div class="brand">
-        <div class="brand-icon">💊</div>
         <span class="brand-name">PillMate</span>
     </div>
 

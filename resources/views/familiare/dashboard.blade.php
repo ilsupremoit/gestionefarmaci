@@ -50,7 +50,6 @@
 <body>
 <aside class="sidebar">
     <div class="brand">
-        <div class="brand-icon">💊</div>
         <span class="brand-name">PillMate</span>
     </div>
     <div class="nav-label">Menu</div>
@@ -74,7 +73,7 @@
 </aside>
 <main class="main">
     <div class="page-header">
-        <h1>Ciao, {{ $familiare->nome }} 👋</h1>
+        <h1>Ciao, {{ $familiare->nome }}</h1>
         <p>Monitora le terapie dei tuoi cari — {{ now()->format('d/m/Y') }}</p>
     </div>
     <div class="stats">

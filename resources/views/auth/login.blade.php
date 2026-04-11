@@ -376,7 +376,6 @@
 
     <div class="left-content">
         <div class="brand">
-            <div class="brand-icon">💊</div>
             <span class="brand-name">PillMate</span>
         </div>
 
@@ -418,7 +417,6 @@
         {{-- Successo (es. dopo registrazione o logout) --}}
         @if (session('success'))
             <div class="alert alert-success">
-                <span>✅</span>
                 <span>{{ session('success') }}</span>
             </div>
         @endif
@@ -444,7 +442,6 @@
             <div class="field">
                 <label for="email">Email</label>
                 <div class="input-wrap">
-                    <span class="ico">✉️</span>
                     <input
                         type="email"
                         id="email"
@@ -465,7 +462,6 @@
             <div class="field">
                 <label for="password">Password</label>
                 <div class="input-wrap">
-                    <span class="ico">🔒</span>
                     <input
                         type="password"
                         id="password"
@@ -499,13 +495,6 @@
 
         <div class="register-link">
             Non hai un account? <a href="{{ route('register') }}">Registrati</a>
-        </div>
-
-        <div class="roles">
-            <div class="role-chip"><span>👨‍⚕️</span> Medico</div>
-            <div class="role-chip"><span>🧑‍🦯</span> Paziente</div>
-            <div class="role-chip"><span>👨‍👩‍👧</span> Familiare</div>
-            <div class="role-chip"><span>🛡️</span> Admin</div>
         </div>
     </div>
 </div>

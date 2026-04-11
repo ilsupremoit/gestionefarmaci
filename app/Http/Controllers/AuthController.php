@@ -15,11 +15,9 @@ class AuthController extends Controller
      */
     public function showLogin()
     {
-        // Se l'utente è già autenticato, reindirizza alla dashboard
         if (Auth::check()) {
             return $this->redirectByRole(Auth::user()->ruolo);
         }
-
         return view('auth.login');
     }
 
@@ -75,7 +73,7 @@ class AuthController extends Controller
      * I ruoli sono definiti nell'ENUM della tabella `utenti`:
      * 'paziente' | 'medico' | 'familiare' | 'admin'
      */
-    private function redirectByRole(string $ruolo)
+    protected function redirectByRole(string $ruolo)
     {
         return match ($ruolo) {
             'medico'    => redirect()->route('medico.dashboard'),
