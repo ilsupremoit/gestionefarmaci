@@ -30,6 +30,7 @@ class RegisterController extends Controller
      */
     public function register(Request $request)
     {
+
         $request->validate([
             'nome'         => ['required', 'string', 'max:50'],
             'cognome'      => ['required', 'string', 'max:50'],

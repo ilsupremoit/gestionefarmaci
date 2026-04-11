@@ -7,6 +7,8 @@ use App\Http\Controllers\Paziente\DashboardController as PazienteDashboard;
 use App\Http\Controllers\Familiare\DashboardController as FamiliareDashboard;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboard;
 use Illuminate\Support\Facades\Route;
+use PhpMqtt\Client\Facades\MQTT;
+
 
 // ── Redirect radice ───────────────────────────────────
 Route::get('/', function () {
@@ -16,6 +18,10 @@ Route::get('/', function () {
     return redirect()->route('login');
 });
 
+Route::get('/mqtt-test', function () {
+    MQTT::publish('pillmate/disp_01/comandi', 'attiva_allarme');
+    return 'Messaggio inviato';
+});
 // ── Auth (solo per guest) ─────────────────────────────
 Route::middleware('guest')->group(function () {
     // Login
