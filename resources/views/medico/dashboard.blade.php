@@ -142,7 +142,7 @@
     <a class="nav-item active" href="#">
         <span class="ico">🏠</span> Dashboard
     </a>
-    <a class="nav-item" href="#">
+    <a class="nav-item" href="">
         <span class="ico">👥</span> I miei pazienti
     </a>
     <a class="nav-item" href="#">

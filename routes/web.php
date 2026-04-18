@@ -65,6 +65,7 @@ Route::get('/mqtt-test', function () {
 
 Route::middleware(['auth', 'role:medico'])->prefix('medico')->name('medico.')->group(function () {
     Route::get('/dashboard', [MedicoDashboard::class, 'index'])->name('dashboard');
+    Route::get('/pazienti', [MedicoPazienteController::class, 'index'])->name('pazienti.index');
     Route::get('/pazienti/crea', [MedicoPazienteController::class, 'create'])->name('pazienti.create');
     Route::post('/pazienti', [MedicoPazienteController::class, 'store'])->name('pazienti.store');
 });
