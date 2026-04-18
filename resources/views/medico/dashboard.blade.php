@@ -142,7 +142,7 @@
     <a class="nav-item active" href="#">
         <span class="ico">🏠</span> Dashboard
     </a>
-    <a class="nav-item" href="">
+    <a class="nav-item" href="{{ route('medico.pazienti.index') }}">
         <span class="ico">👥</span> I miei pazienti
     </a>
     <a class="nav-item" href="#">
@@ -190,7 +190,7 @@
                 <span class="stat-label">Pazienti seguiti</span>
                 <div class="stat-ico blue">👥</div>
             </div>
-            <div class="stat-value">0</div>
+            <div class="stat-value">{{ $numPazienti }}</div>
             <div class="stat-sub">pazienti attivi</div>
         </div>
         <div class="stat-card">
@@ -198,7 +198,7 @@
                 <span class="stat-label">Terapie attive</span>
                 <div class="stat-ico green">💊</div>
             </div>
-            <div class="stat-value">0</div>
+            <div class="stat-value">{{ $terapieAttive }}</div>
             <div class="stat-sub">in corso</div>
         </div>
         <div class="stat-card">
@@ -206,7 +206,7 @@
                 <span class="stat-label">Assunzioni oggi</span>
                 <div class="stat-ico yellow">📋</div>
             </div>
-            <div class="stat-value">0</div>
+            <div class="stat-value">{{ $assunzioniPreviste }}</div>
             <div class="stat-sub">previste</div>
         </div>
         <div class="stat-card">
@@ -214,7 +214,7 @@
                 <span class="stat-label">Dosi saltate</span>
                 <div class="stat-ico red">⚠️</div>
             </div>
-            <div class="stat-value">0</div>
+            <div class="stat-value">{{ $dosiSaltate }}</div>
             <div class="stat-sub">ultime 24h</div>
         </div>
     </div>
@@ -222,7 +222,22 @@
     <div class="content-grid">
         <div class="card">
             <div class="card-title">👥 Ultimi pazienti</div>
+            @forelse($ultimiPazienti as $paz)
+            @php $u = $paz->utente; $hasAlarm = $paz->dispositivi->where('allarme_attivo', true)->isNotEmpty(); @endphp
+            <div style="display:flex; align-items:center; gap:12px; padding:10px 0; border-bottom:1px solid var(--border);">
+                <div style="width:36px; height:36px; border-radius:10px; background:linear-gradient(135deg,#1e3a5f,#0e4d6e); display:flex; align-items:center; justify-content:center; font-weight:700; font-size:13px; color:var(--accent2); flex-shrink:0;">
+                    {{ strtoupper(substr($u->nome,0,1)) }}{{ strtoupper(substr($u->cognome,0,1)) }}
+                </div>
+                <div style="flex:1; min-width:0;">
+                    <div style="font-weight:600; font-size:13px;">{{ $u->cognome }} {{ $u->nome }}</div>
+                    <div style="font-size:11px; color:var(--muted);">{{ $paz->terapie->where('attiva',true)->count() }} terapie attive</div>
+                </div>
+                @if($hasAlarm)<span style="color:var(--red); font-size:11px;">⚠ Allarme</span>@endif
+                <a href="{{ route('medico.pazienti.show', $paz->id) }}" style="font-size:12px; color:var(--accent); text-decoration:none;">Dettaglio →</a>
+            </div>
+            @empty
             <div class="empty-state">Nessun paziente ancora assegnato.</div>
+            @endforelse
         </div>
         <div class="card">
             <div class="card-title">🔔 Notifiche recenti</div>

@@ -35,6 +35,14 @@ class Paziente extends Model
         return $this->hasMany(Terapia::class, 'id_paziente');
     }
 
+    /** Assunzioni del paziente (tramite somministrazioni → terapie) */
+    public function assunzioni()
+    {
+        return Assunzione::whereHas('somministrazione.terapia', function ($q) {
+            $q->where('id_paziente', $this->id);
+        });
+    }
+
     /** Dispositivi IoT del paziente */
     public function dispositivi()
     {

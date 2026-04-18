@@ -406,8 +406,8 @@
             </div>
 
             <div class="card-actions">
-                <a href="#" class="btn-card primary">Visualizza</a>
-                <a href="#" class="btn-card secondary">Terapie</a>
+                <a href="{{ route('medico.pazienti.show', $paziente->id) }}" class="btn-card primary">Visualizza</a>
+                <a href="{{ route('medico.pazienti.show', $paziente->id) }}#terapie" class="btn-card secondary">Terapie</a>
             </div>
 
         </div>

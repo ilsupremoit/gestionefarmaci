@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\MedicoPazienteDetailController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboard;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\Familiare\DashboardController as FamiliareDashboard;
@@ -68,6 +69,19 @@ Route::middleware(['auth', 'role:medico'])->prefix('medico')->name('medico.')->g
     Route::get('/pazienti', [MedicoPazienteController::class, 'index'])->name('pazienti.index');
     Route::get('/pazienti/crea', [MedicoPazienteController::class, 'create'])->name('pazienti.create');
     Route::post('/pazienti', [MedicoPazienteController::class, 'store'])->name('pazienti.store');
+
+    // Dettaglio paziente
+    Route::get('/pazienti/{paziente}', [MedicoPazienteDetailController::class, 'show'])->name('pazienti.show');
+
+    // Terapie
+    Route::post('/pazienti/{paziente}/terapie', [MedicoPazienteDetailController::class, 'storeTerapia'])->name('pazienti.terapie.store');
+
+    // Comandi IoT
+    Route::post('/pazienti/{paziente}/eroga', [MedicoPazienteDetailController::class, 'erogazioneForzata'])->name('pazienti.eroga');
+    Route::post('/pazienti/{paziente}/allarme', [MedicoPazienteDetailController::class, 'toggleAllarme'])->name('pazienti.allarme');
+
+    // Aggiorna stato assunzione (AJAX)
+    Route::patch('/assunzioni/{assunzione}', [MedicoPazienteDetailController::class, 'aggiornaAssunzione'])->name('assunzioni.update');
 });
 
 Route::middleware(['auth', 'role:paziente'])->prefix('paziente')->name('paziente.')->group(function () {
