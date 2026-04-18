@@ -16,27 +16,59 @@ class MqttListen extends Command
 
         $mqtt = MQTT::connection();
 
-        $this->info('Connesso. In ascolto sui topic pillmate/+/eventi');
+        $this->info('Connesso. In ascolto su pillmate/+/eventi e pillmate/+/comandi e pillmate/disp_01/stato');
 
-        $mqtt->subscribe('pillmate/+/eventi', function (string $topic, string $message) {
-            $this->info("Ricevuto su {$topic}: {$message}");
+        $mqtt->subscribe('pillmate/disp_01/telemetria', function (string $topic, string $message) {
+            $this->line('----------------------------');
+            $this->info("EVENTO | Topic: {$topic}");
+            $this->line("Messaggio grezzo: {$message}");
 
             $payload = json_decode($message, true);
 
-            if (json_last_error() !== JSON_ERROR_NONE) {
-                $this->error('Payload non valido in formato JSON');
-                return;
+            if (json_last_error() === JSON_ERROR_NONE) {
+                $this->info('JSON decodificato correttamente:');
+                print_r($payload);
+            } else {
+                $this->error('Il messaggio non è un JSON valido.');
             }
+        }, 1);
 
-            // esempio:
-            // \Log::info('Messaggio MQTT ricevuto', [
-            //     'topic' => $topic,
-            //     'payload' => $payload,
-            // ]);
+        $mqtt->subscribe('pillmate/disp_01/stato', function (string $topic, string $message) {
+            $this->line('----------------------------');
+            $this->info("EVENTO | Topic: {$topic}");
+            $this->line("Messaggio grezzo: {$message}");
+
+            $payload = json_decode($message, true);
+
+            if (json_last_error() === JSON_ERROR_NONE) {
+                $this->info('JSON decodificato correttamente:');
+                print_r($payload);
+            } else {
+                $this->error('Il messaggio non è un JSON valido.');
+            }
+        }, 1);
+
+
+
+        $mqtt->subscribe('pillmate/disp_01/eventi', function (string $topic, string $message) {
+            $this->line('----------------------------');
+            $this->info("COMANDO | Topic: {$topic}");
+            $this->line("Messaggio grezzo: {$message}");
+
+            $payload = json_decode($message, true);
+
+            if (json_last_error() === JSON_ERROR_NONE) {
+                $this->info('JSON decodificato correttamente:');
+                print_r($payload);
+            } else {
+                $this->error('Il messaggio non è un JSON valido.');
+            }
         }, 1);
 
         $mqtt->loop(true);
 
         return Command::SUCCESS;
     }
+
+
 }
