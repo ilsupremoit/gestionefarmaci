@@ -207,8 +207,6 @@ $eta        = $paziente->data_nascita ? \Carbon\Carbon::parse($paziente->data_na
     <div class="nav-label">Menu</div>
     <a class="nav-item" href="{{ route('medico.dashboard') }}">🏠 Dashboard</a>
     <a class="nav-item active" href="{{ route('medico.pazienti.index') }}">👥 I miei pazienti</a>
-    <a class="nav-item" href="#">💊 Terapie</a>
-    <a class="nav-item" href="#">📋 Somministrazioni</a>
     <a class="nav-item" href="#">🔔 Notifiche</a>
     <div class="sidebar-footer">
         <div class="user-info">

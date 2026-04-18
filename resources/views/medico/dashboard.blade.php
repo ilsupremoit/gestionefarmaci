@@ -146,12 +146,6 @@
         <span class="ico">👥</span> I miei pazienti
     </a>
     <a class="nav-item" href="#">
-        <span class="ico">💊</span> Terapie
-    </a>
-    <a class="nav-item" href="#">
-        <span class="ico">📋</span> Somministrazioni
-    </a>
-    <a class="nav-item" href="#">
         <span class="ico">🔔</span> Notifiche
     </a>
 

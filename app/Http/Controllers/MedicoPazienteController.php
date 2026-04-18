@@ -8,7 +8,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Validation\Rules\Password;
 
 class MedicoPazienteController extends Controller
 {
@@ -26,11 +25,11 @@ class MedicoPazienteController extends Controller
                 'dispositivi',
             ]);
 
-        // Ricerca per nome / cognome / email
         if ($search = $request->get('q')) {
             $query->whereHas('utente', function ($q) use ($search) {
                 $q->where('nome', 'like', "%{$search}%")
                     ->orWhere('cognome', 'like', "%{$search}%")
+                    ->orWhere('username', 'like', "%{$search}%")
                     ->orWhere('email', 'like', "%{$search}%");
             });
         }
@@ -45,7 +44,7 @@ class MedicoPazienteController extends Controller
     }
 
     /**
-     * Form di creazione paziente + account utente.
+     * Form di creazione paziente.
      */
     public function create()
     {
@@ -55,35 +54,41 @@ class MedicoPazienteController extends Controller
     }
 
     /**
-     * Salva il nuovo paziente e lo collega al medico.
+     * Salva il nuovo paziente.
+     * Il medico assegna username e password provvisoria; l'email è opzionale.
      */
     public function store(Request $request)
     {
         $request->validate([
-            'nome'         => ['required', 'string', 'max:50'],
-            'cognome'      => ['required', 'string', 'max:50'],
-            'email'        => ['required', 'email', 'max:100', 'unique:users,email'],
-            'telefono'     => ['nullable', 'string', 'max:20'],
-            'data_nascita' => ['required', 'date'],
-            'indirizzo'    => ['nullable', 'string', 'max:150'],
-            'note_mediche' => ['nullable', 'string'],
+            'nome'          => ['required', 'string', 'max:50'],
+            'cognome'       => ['required', 'string', 'max:50'],
+            'username'      => ['required', 'string', 'max:50', 'unique:users,username'],
+            'password_temp' => ['required', 'string', 'min:6'],
+            'email'         => ['nullable', 'email', 'max:100', 'unique:users,email'],
+            'telefono'      => ['nullable', 'string', 'max:20'],
+            'data_nascita'  => ['nullable', 'date'],
+            'indirizzo'     => ['nullable', 'string', 'max:150'],
+            'note_mediche'  => ['nullable', 'string'],
         ], [
-            'nome.required'         => 'Il nome e\' obbligatorio.',
-            'cognome.required'      => 'Il cognome e\' obbligatorio.',
-            'email.required'        => 'L\'email e\' obbligatoria.',
-            'email.unique'          => 'Questa email e\' gia\' registrata.',
-            'data_nascita.required' => 'La data di nascita e\' obbligatoria.',
+            'nome.required'          => 'Il nome è obbligatorio.',
+            'cognome.required'       => 'Il cognome è obbligatorio.',
+            'username.required'      => 'Il nome utente è obbligatorio.',
+            'username.unique'        => 'Questo nome utente è già in uso.',
+            'password_temp.required' => 'La password provvisoria è obbligatoria.',
+            'password_temp.min'      => 'La password deve essere di almeno 6 caratteri.',
+            'email.unique'           => 'Questa email è già registrata.',
         ]);
 
         DB::transaction(function () use ($request) {
             $user = User::create([
-                'nome'                => $request->nome,
-                'cognome'             => $request->cognome,
-                'email'               => $request->email,
-                'password'            => Hash::make(\Illuminate\Support\Str::random(16)),
-                'ruolo'               => 'paziente',
-                'telefono'            => $request->telefono,
-                'must_change_password'=> true,
+                'nome'                 => $request->nome,
+                'cognome'              => $request->cognome,
+                'username'             => $request->username,
+                'email'                => $request->email ?: null,
+                'password'             => Hash::make($request->password_temp),
+                'ruolo'                => 'paziente',
+                'telefono'             => $request->telefono,
+                'must_change_password' => true,
             ]);
 
             $paziente = Paziente::create([
@@ -93,14 +98,13 @@ class MedicoPazienteController extends Controller
                 'note_mediche' => $request->note_mediche,
             ]);
 
-            // Collega il medico al paziente
             DB::table('medici_pazienti')->insert([
-                'id_medico'  => Auth::id(),
-                'id_paziente'=> $paziente->id,
+                'id_medico'   => Auth::id(),
+                'id_paziente' => $paziente->id,
             ]);
         });
 
         return redirect()->route('medico.pazienti.index')
-            ->with('success', 'Paziente aggiunto con successo.');
+            ->with('success', 'Paziente creato con successo. Credenziali: ' . $request->username . ' / ' . $request->password_temp);
     }
 }
