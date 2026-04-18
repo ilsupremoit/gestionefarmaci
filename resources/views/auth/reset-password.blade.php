@@ -1,10 +1,10 @@
-{{-- resources/views/auth/login.blade.php --}}
-<!DOCTYPE html>
+{{-- resources/views/auth/reset-password.blade.php --}}
+    <!DOCTYPE html>
 <html lang="it">
 <head>
     <meta charset="UTF-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>PillMate — Accedi</title>
+    <title>PillMate — Reimposta Password</title>
     <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
     <style>
         :root {
@@ -46,35 +46,21 @@
             position: absolute;
             border-radius: 50%;
             filter: blur(80px);
-            opacity: .25;
-            animation: drift 8s ease-in-out infinite alternate;
+            opacity: .22;
+            animation: drift 9s ease-in-out infinite alternate;
         }
-        .orb-1 { width: 380px; height: 380px; background: var(--accent);  top: -80px;  left: -80px; animation-delay: 0s; }
-        .orb-2 { width: 300px; height: 300px; background: var(--accent2); bottom: 40px; right: -60px; animation-delay: 2s; }
-        .orb-3 { width: 200px; height: 200px; background: var(--green);   bottom: 160px; left: 80px; animation-delay: 4s; }
+        .orb-1 { width: 340px; height: 340px; background: var(--green);  top: -60px; left: -70px; }
+        .orb-2 { width: 260px; height: 260px; background: var(--accent); bottom: 50px; right: -50px; animation-delay: 2s; }
+        .orb-3 { width: 200px; height: 200px; background: var(--accent2);top: 40%; left: 80px; animation-delay: 4s; }
 
         @keyframes drift {
             from { transform: translate(0, 0) scale(1); }
-            to   { transform: translate(20px, 20px) scale(1.08); }
+            to   { transform: translate(16px, 20px) scale(1.07); }
         }
 
         .left-content { position: relative; z-index: 1; }
 
-        .brand {
-            display: flex;
-            align-items: center;
-            gap: 14px;
-            margin-bottom: 56px;
-        }
-
-        .brand-icon {
-            width: 46px; height: 46px;
-            background: linear-gradient(135deg, var(--accent), var(--accent2));
-            border-radius: 13px;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 22px;
-            box-shadow: 0 0 30px rgba(59,130,246,.4);
-        }
+        .brand { display: flex; align-items: center; gap: 14px; margin-bottom: 56px; }
 
         .brand-name {
             font-family: 'Syne', sans-serif;
@@ -87,14 +73,14 @@
 
         .left h1 {
             font-family: 'Syne', sans-serif;
-            font-size: 40px;
+            font-size: 38px;
             font-weight: 800;
-            line-height: 1.15;
+            line-height: 1.18;
             margin-bottom: 18px;
         }
 
         .left h1 span {
-            background: linear-gradient(90deg, var(--accent), var(--accent2));
+            background: linear-gradient(90deg, var(--green), var(--accent2));
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
@@ -104,40 +90,41 @@
             color: var(--muted);
             line-height: 1.7;
             max-width: 360px;
-            margin-bottom: 48px;
+            margin-bottom: 40px;
         }
 
-        .features { display: flex; flex-direction: column; gap: 14px; }
+        /* Password rules list */
+        .pw-rules {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
 
-        .feat {
+        .pw-rule {
             display: flex;
             align-items: center;
-            gap: 14px;
-            padding: 14px 18px;
+            gap: 12px;
+            font-size: 13px;
+            color: var(--muted);
+            padding: 10px 16px;
             background: rgba(255,255,255,.04);
             border: 1px solid var(--border);
-            border-radius: 12px;
-            font-size: 13px;
-            backdrop-filter: blur(8px);
+            border-radius: 10px;
             animation: fadeUp .5s ease both;
         }
-        .feat:nth-child(1) { animation-delay: .1s; }
-        .feat:nth-child(2) { animation-delay: .2s; }
-        .feat:nth-child(3) { animation-delay: .3s; }
+        .pw-rule:nth-child(1) { animation-delay: .1s; }
+        .pw-rule:nth-child(2) { animation-delay: .2s; }
+        .pw-rule:nth-child(3) { animation-delay: .3s; }
+        .pw-rule:nth-child(4) { animation-delay: .4s; }
 
-        .feat-ico {
-            width: 34px; height: 34px;
-            border-radius: 9px;
+        .pw-rule-ico {
+            font-size: 15px;
+            width: 28px; height: 28px;
+            border-radius: 7px;
             display: flex; align-items: center; justify-content: center;
-            font-size: 17px;
+            background: rgba(16,185,129,.15);
             flex-shrink: 0;
         }
-        .feat-ico.blue  { background: rgba(59,130,246,.15); }
-        .feat-ico.cyan  { background: rgba(6,182,212,.15); }
-        .feat-ico.green { background: rgba(16,185,129,.15); }
-
-        .feat-text strong { display: block; font-weight: 500; font-size: 13px; margin-bottom: 2px; }
-        .feat-text span   { color: var(--muted); font-size: 12px; }
 
         /* ── Right panel ─────────────────────────────── */
         .right {
@@ -157,35 +144,29 @@
             font-family: 'Syne', sans-serif;
             font-size: 26px;
             font-weight: 700;
-            margin-bottom: 40px;
+            margin-bottom: 6px;
         }
 
         .form-box .subtitle {
             color: var(--muted);
             font-size: 14px;
             margin-bottom: 36px;
+            line-height: 1.6;
         }
 
-        /* Alerts */
-        .alert {
-            display: flex;
-            align-items: flex-start;
-            gap: 10px;
-            border-radius: 10px;
-            padding: 12px 14px;
-            margin-bottom: 24px;
-            font-size: 13px;
-        }
+        /* Alert */
         .alert-error {
             background: rgba(239,68,68,.1);
             border: 1px solid rgba(239,68,68,.3);
+            border-radius: 10px;
+            padding: 12px 15px;
+            margin-bottom: 24px;
+            font-size: 13px;
             color: #fca5a5;
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
             animation: shake .35s ease;
-        }
-        .alert-success {
-            background: rgba(16,185,129,.1);
-            border: 1px solid rgba(16,185,129,.3);
-            color: #6ee7b7;
         }
 
         @keyframes shake {
@@ -194,7 +175,7 @@
             75%      { transform: translateX(5px); }
         }
 
-        /* Form fields */
+        /* Fields */
         .field { margin-bottom: 20px; }
 
         .field label {
@@ -253,7 +234,7 @@
             border: none;
             color: var(--muted);
             cursor: pointer;
-            font-size: 16px;
+            font-size: 15px;
             padding: 4px;
             transition: color .2s;
         }
@@ -265,26 +246,19 @@
             margin-top: 5px;
         }
 
-        .form-row {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 28px;
+        /* Password strength */
+        .pw-strength {
+            height: 3px;
+            border-radius: 3px;
+            margin-top: 6px;
+            background: var(--border);
+            overflow: hidden;
         }
-
-        .remember {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 13px;
-            color: var(--muted);
-            cursor: pointer;
-        }
-
-        .remember input[type="checkbox"] {
-            width: 15px; height: 15px;
-            accent-color: var(--accent);
-            cursor: pointer;
+        .pw-strength-bar {
+            height: 100%;
+            width: 0;
+            border-radius: 3px;
+            transition: width .3s, background .3s;
         }
 
         .btn-submit {
@@ -299,60 +273,24 @@
             font-weight: 700;
             cursor: pointer;
             transition: opacity .2s, transform .15s, box-shadow .2s;
-            box-shadow: 0 4px 20px rgba(59,130,246,.35);
+            box-shadow: 0 4px 20px rgba(59, 130, 246, .35);
             letter-spacing: .3px;
+            margin-bottom: 24px;
         }
-        .btn-submit:hover  { opacity: .9; transform: translateY(-1px); box-shadow: 0 6px 28px rgba(59,130,246,.45); }
+        .btn-submit:hover  { opacity: .9; transform: translateY(-1px); box-shadow: 0 6px 28px rgba(16,185,129,.45); }
         .btn-submit:active { transform: translateY(0); }
 
-        .divider {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            margin: 24px 0 16px;
-            color: var(--muted);
-            font-size: 12px;
-        }
-        .divider::before, .divider::after {
-            content: '';
-            flex: 1;
-            height: 1px;
-            background: var(--border);
-        }
-
-        .register-link {
+        .back-link {
             text-align: center;
             font-size: 13px;
             color: var(--muted);
-            margin-top: 4px;
         }
-
-        .register-link a {
+        .back-link a {
             color: var(--accent);
             font-weight: 600;
             text-decoration: none;
         }
-        .register-link a:hover { text-decoration: underline; }
-
-        .roles {
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-            margin-top: 16px;
-        }
-
-        .role-chip {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            padding: 6px 12px;
-            border: 1px solid var(--border);
-            border-radius: 20px;
-            font-size: 12px;
-            color: var(--muted);
-            background: rgba(255,255,255,.03);
-        }
-        .role-chip span { font-size: 14px; }
+        .back-link a:hover { text-decoration: underline; }
 
         @keyframes fadeUp {
             from { opacity: 0; transform: translateY(14px); }
@@ -379,112 +317,87 @@
             <span class="brand-name">PillMate</span>
         </div>
 
-        <h1>Gestione terapie<br><span>intelligente e sicura</span></h1>
-        <p>Monitoraggio in tempo reale delle somministrazioni, dispositivi IoT e comunicazione continua tra medici, pazienti e familiari.</p>
+        <h1>Crea una<br><span>password sicura</span></h1>
+        <p>Scegli una password forte per proteggere il tuo account e i dati dei tuoi pazienti.</p>
 
-        <div class="features">
-            <div class="feat">
-                <div class="feat-ico blue">📡</div>
-                <div class="feat-text">
-                    <strong>Dispositivi IoT connessi</strong>
-                    <span>Temperatura, umidità e batteria in tempo reale</span>
-                </div>
-            </div>
-            <div class="feat">
-                <div class="feat-ico cyan">📋</div>
-                <div class="feat-text">
-                    <strong>Terapie personalizzate</strong>
-                    <span>Il medico imposta, il paziente viene guidato</span>
-                </div>
-            </div>
-            <div class="feat">
-                <div class="feat-ico green">🔔</div>
-                <div class="feat-text">
-                    <strong>Alert e notifiche</strong>
-                    <span>Familiari sempre informati sulle assunzioni</span>
-                </div>
-            </div>
-        </div>
+
     </div>
 </div>
 
 {{-- ═══ RIGHT PANEL ═══ --}}
 <div class="right">
     <div class="form-box">
-        <h2>Bentornato</h2>
-        @if (session('success'))
-            <div class="alert alert-success">
-                <span>{{ session('success') }}</span>
+        <h2>Reimposta la password</h2>
+        <p class="subtitle">Inserisci la tua email e la nuova password<br>per riprendere l'accesso a PillMate.</p>
+
+        {{-- Errore generale --}}
+        @if ($errors->has('email') && !$errors->has('password'))
+            <div class="alert-error">
+                <span>{{ $errors->first('email') }}</span>
             </div>
         @endif
 
-        {{-- Errore credenziali --}}
-        @if ($errors->has('email') || session('error'))
-            <div class="alert alert-error">
-                <span>⚠️</span>
-                <span>
-                    @if (session('error'))
-                        {{ session('error') }}
-                    @else
-                        {{ $errors->first('email') }}
-                    @endif
-                </span>
-            </div>
-        @endif
-
-        <form method="POST" action="{{ route('login') }}">
+        <form method="POST" action="{{ route('password.update') }}">
             @csrf
 
-            {{-- Email --}}
-            <div class="field">
-                <label for="password">Nome utente o email</label>
-                <div class="input-wrap">
-                    <input type="text" name="login" value="{{ old('login') }}" placeholder="Email o nome utente">
-                </div>
-            </div>
+            {{-- Token nascosto --}}
+            <input type="hidden" name="token" value="{{ $token }}">
 
-            {{-- Password --}}
+            {{-- Nuova password --}}
             <div class="field">
-                <label for="password">Password</label>
+                <label for="password">Nuova password</label>
                 <div class="input-wrap">
+                    <span class="ico"></span>
                     <input
                         type="password"
                         id="password"
                         name="password"
-                        placeholder="••••••••"
-                        autocomplete="current-password"
+                        placeholder="Almeno 8 caratteri"
+                        autocomplete="new-password"
                         class="{{ $errors->has('password') ? 'is-invalid' : '' }}"
+                        oninput="checkStrength(this.value)"
                         required
                     />
-                    <button type="button" class="toggle-pw" onclick="togglePw()" id="toggleBtn" title="Mostra/nascondi password">
-                        👁
-                    </button>
+                    <button type="button" class="toggle-pw" onclick="togglePw('password','btn1')" id="btn1">👁</button>
+                </div>
+                <div class="pw-strength">
+                    <div class="pw-strength-bar" id="pw-bar"></div>
                 </div>
                 @error('password')
-                    <div class="field-error">{{ $message }}</div>
+                <div class="field-error">{{ $message }}</div>
                 @enderror
             </div>
 
-            {{-- Ricordami --}}
-            <div class="form-row">
-                <label class="remember">
-                    <input type="checkbox" name="remember" {{ old('remember') ? 'checked' : '' }}>
-                    Ricordami
-                </label>
-                <a href="{{ route('password.request') }}" style="font-size:13px; color:var(--accent); text-decoration:none;">
-                    Password dimenticata?
-                </a>
+            {{-- Conferma password --}}
+            <div class="field">
+                <label for="password_confirmation">Conferma nuova password</label>
+                <div class="input-wrap">
+                    <span class="ico"></span>
+                    <input
+                        type="password"
+                        id="password_confirmation"
+                        name="password_confirmation"
+                        placeholder="Ripeti la nuova password"
+                        autocomplete="new-password"
+                        required
+                    />
+                    <button type="button" class="toggle-pw" onclick="togglePw('password_confirmation','btn2')" id="btn2">👁</button>
+                </div>
             </div>
 
-            <button type="submit" class="btn-submit">Accedi a PillMate</button>
+            <button type="submit" class="btn-submit">Salva nuova password</button>
         </form>
+
+        <div class="back-link">
+            <a href="{{ route('login') }}">← Torna al login</a>
+        </div>
     </div>
 </div>
 
 <script>
-    function togglePw() {
-        const input = document.getElementById('password');
-        const btn   = document.getElementById('toggleBtn');
+    function togglePw(inputId, btnId) {
+        const input = document.getElementById(inputId);
+        const btn   = document.getElementById(btnId);
         if (input.type === 'password') {
             input.type = 'text';
             btn.textContent = '🙈';
@@ -492,6 +405,21 @@
             input.type = 'password';
             btn.textContent = '👁';
         }
+    }
+
+    function checkStrength(value) {
+        const bar = document.getElementById('pw-bar');
+        let score = 0;
+        if (value.length >= 8)           score++;
+        if (/[A-Z]/.test(value))         score++;
+        if (/[0-9]/.test(value))         score++;
+        if (/[^A-Za-z0-9]/.test(value))  score++;
+
+        const colors = ['#ef4444', '#f97316', '#eab308', '#10b981'];
+        const widths = ['25%', '50%', '75%', '100%'];
+
+        bar.style.width      = score > 0 ? widths[score - 1] : '0';
+        bar.style.background = score > 0 ? colors[score - 1] : 'transparent';
     }
 </script>
 

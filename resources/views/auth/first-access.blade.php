@@ -1,10 +1,10 @@
-{{-- resources/views/auth/login.blade.php --}}
-<!DOCTYPE html>
+{{-- resources/views/auth/first-access.blade.php --}}
+    <!DOCTYPE html>
 <html lang="it">
 <head>
     <meta charset="UTF-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>PillMate — Accedi</title>
+    <title>PillMate — Primo accesso</title>
     <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
     <style>
         :root {
@@ -46,16 +46,16 @@
             position: absolute;
             border-radius: 50%;
             filter: blur(80px);
-            opacity: .25;
+            opacity: .22;
             animation: drift 8s ease-in-out infinite alternate;
         }
-        .orb-1 { width: 380px; height: 380px; background: var(--accent);  top: -80px;  left: -80px; animation-delay: 0s; }
-        .orb-2 { width: 300px; height: 300px; background: var(--accent2); bottom: 40px; right: -60px; animation-delay: 2s; }
-        .orb-3 { width: 200px; height: 200px; background: var(--green);   bottom: 160px; left: 80px; animation-delay: 4s; }
+        .orb-1 { width: 360px; height: 360px; background: var(--accent);  top: -60px;  left: -60px; }
+        .orb-2 { width: 280px; height: 280px; background: var(--green);   bottom: 60px; right: -40px; animation-delay: 2s; }
+        .orb-3 { width: 180px; height: 180px; background: var(--accent2); bottom: 200px; left: 100px; animation-delay: 4s; }
 
         @keyframes drift {
-            from { transform: translate(0, 0) scale(1); }
-            to   { transform: translate(20px, 20px) scale(1.08); }
+            from { transform: translate(0,0) scale(1); }
+            to   { transform: translate(18px,18px) scale(1.07); }
         }
 
         .left-content { position: relative; z-index: 1; }
@@ -64,16 +64,7 @@
             display: flex;
             align-items: center;
             gap: 14px;
-            margin-bottom: 56px;
-        }
-
-        .brand-icon {
-            width: 46px; height: 46px;
-            background: linear-gradient(135deg, var(--accent), var(--accent2));
-            border-radius: 13px;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 22px;
-            box-shadow: 0 0 30px rgba(59,130,246,.4);
+            margin-bottom: 52px;
         }
 
         .brand-name {
@@ -87,9 +78,9 @@
 
         .left h1 {
             font-family: 'Syne', sans-serif;
-            font-size: 40px;
+            font-size: 36px;
             font-weight: 800;
-            line-height: 1.15;
+            line-height: 1.2;
             margin-bottom: 18px;
         }
 
@@ -104,40 +95,41 @@
             color: var(--muted);
             line-height: 1.7;
             max-width: 360px;
-            margin-bottom: 48px;
+            margin-bottom: 44px;
         }
 
-        .features { display: flex; flex-direction: column; gap: 14px; }
+        /* Info list */
+        .info-list { display: flex; flex-direction: column; gap: 14px; }
 
-        .feat {
+        .info-item {
             display: flex;
-            align-items: center;
+            align-items: flex-start;
             gap: 14px;
             padding: 14px 18px;
             background: rgba(255,255,255,.04);
             border: 1px solid var(--border);
             border-radius: 12px;
-            font-size: 13px;
             backdrop-filter: blur(8px);
             animation: fadeUp .5s ease both;
         }
-        .feat:nth-child(1) { animation-delay: .1s; }
-        .feat:nth-child(2) { animation-delay: .2s; }
-        .feat:nth-child(3) { animation-delay: .3s; }
+        .info-item:nth-child(1) { animation-delay: .1s; }
+        .info-item:nth-child(2) { animation-delay: .2s; }
+        .info-item:nth-child(3) { animation-delay: .3s; }
 
-        .feat-ico {
+        .info-icon {
             width: 34px; height: 34px;
             border-radius: 9px;
             display: flex; align-items: center; justify-content: center;
-            font-size: 17px;
+            font-size: 16px;
             flex-shrink: 0;
+            margin-top: 1px;
         }
-        .feat-ico.blue  { background: rgba(59,130,246,.15); }
-        .feat-ico.cyan  { background: rgba(6,182,212,.15); }
-        .feat-ico.green { background: rgba(16,185,129,.15); }
+        .info-icon.blue  { background: rgba(59,130,246,.15); }
+        .info-icon.green { background: rgba(16,185,129,.15); }
+        .info-icon.cyan  { background: rgba(6,182,212,.15); }
 
-        .feat-text strong { display: block; font-weight: 500; font-size: 13px; margin-bottom: 2px; }
-        .feat-text span   { color: var(--muted); font-size: 12px; }
+        .info-text strong { display: block; font-weight: 500; font-size: 13px; margin-bottom: 2px; }
+        .info-text span   { color: var(--muted); font-size: 12px; line-height: 1.5; }
 
         /* ── Right panel ─────────────────────────────── */
         .right {
@@ -163,14 +155,11 @@
         .form-box .subtitle {
             color: var(--muted);
             font-size: 14px;
-            margin-bottom: 36px;
+            margin-bottom: 32px;
         }
 
         /* Alerts */
         .alert {
-            display: flex;
-            align-items: flex-start;
-            gap: 10px;
             border-radius: 10px;
             padding: 12px 14px;
             margin-bottom: 24px;
@@ -194,8 +183,19 @@
             75%      { transform: translateX(5px); }
         }
 
-        /* Form fields */
-        .field { margin-bottom: 20px; }
+        /* Fields */
+        .section-sep {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--muted);
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 8px;
+            margin: 0 0 20px;
+        }
+
+        .field { margin-bottom: 18px; }
 
         .field label {
             display: block;
@@ -204,19 +204,19 @@
             text-transform: uppercase;
             letter-spacing: .8px;
             color: var(--muted);
-            margin-bottom: 8px;
+            margin-bottom: 7px;
         }
 
         .input-wrap { position: relative; }
 
         .input-wrap .ico {
             position: absolute;
-            left: 14px;
+            left: 12px;
             top: 50%;
             transform: translateY(-50%);
-            font-size: 16px;
+            font-size: 15px;
             pointer-events: none;
-            opacity: .5;
+            opacity: .45;
         }
 
         .input-wrap input {
@@ -224,7 +224,7 @@
             background: var(--surface);
             border: 1px solid var(--border);
             border-radius: 10px;
-            padding: 12px 14px 12px 42px;
+            padding: 11px 12px 11px 38px;
             color: var(--text);
             font-family: 'DM Sans', sans-serif;
             font-size: 14px;
@@ -246,14 +246,14 @@
 
         .toggle-pw {
             position: absolute;
-            right: 12px;
+            right: 10px;
             top: 50%;
             transform: translateY(-50%);
             background: none;
             border: none;
             color: var(--muted);
             cursor: pointer;
-            font-size: 16px;
+            font-size: 15px;
             padding: 4px;
             transition: color .2s;
         }
@@ -262,31 +262,25 @@
         .field-error {
             font-size: 11px;
             color: var(--red);
-            margin-top: 5px;
+            margin-top: 4px;
         }
 
-        .form-row {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 28px;
+        /* Strength bar */
+        .pw-strength {
+            height: 3px;
+            border-radius: 3px;
+            margin-top: 6px;
+            background: var(--border);
+            overflow: hidden;
+        }
+        .pw-strength-bar {
+            height: 100%;
+            width: 0;
+            border-radius: 3px;
+            transition: width .3s, background .3s;
         }
 
-        .remember {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 13px;
-            color: var(--muted);
-            cursor: pointer;
-        }
-
-        .remember input[type="checkbox"] {
-            width: 15px; height: 15px;
-            accent-color: var(--accent);
-            cursor: pointer;
-        }
-
+        /* Submit */
         .btn-submit {
             width: 100%;
             padding: 13px;
@@ -300,59 +294,24 @@
             cursor: pointer;
             transition: opacity .2s, transform .15s, box-shadow .2s;
             box-shadow: 0 4px 20px rgba(59,130,246,.35);
+            margin-top: 8px;
             letter-spacing: .3px;
         }
         .btn-submit:hover  { opacity: .9; transform: translateY(-1px); box-shadow: 0 6px 28px rgba(59,130,246,.45); }
         .btn-submit:active { transform: translateY(0); }
 
-        .divider {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            margin: 24px 0 16px;
-            color: var(--muted);
-            font-size: 12px;
-        }
-        .divider::before, .divider::after {
-            content: '';
-            flex: 1;
-            height: 1px;
-            background: var(--border);
-        }
-
-        .register-link {
+        .back-link {
             text-align: center;
             font-size: 13px;
             color: var(--muted);
-            margin-top: 4px;
+            margin-top: 20px;
         }
-
-        .register-link a {
+        .back-link a {
             color: var(--accent);
             font-weight: 600;
             text-decoration: none;
         }
-        .register-link a:hover { text-decoration: underline; }
-
-        .roles {
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-            margin-top: 16px;
-        }
-
-        .role-chip {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            padding: 6px 12px;
-            border: 1px solid var(--border);
-            border-radius: 20px;
-            font-size: 12px;
-            color: var(--muted);
-            background: rgba(255,255,255,.03);
-        }
-        .role-chip span { font-size: 14px; }
+        .back-link a:hover { text-decoration: underline; }
 
         @keyframes fadeUp {
             from { opacity: 0; transform: translateY(14px); }
@@ -379,29 +338,29 @@
             <span class="brand-name">PillMate</span>
         </div>
 
-        <h1>Gestione terapie<br><span>intelligente e sicura</span></h1>
-        <p>Monitoraggio in tempo reale delle somministrazioni, dispositivi IoT e comunicazione continua tra medici, pazienti e familiari.</p>
+        <h1>Benvenuto su<br><span>PillMate</span></h1>
+        <p>Il tuo account è stato creato da un amministratore. Per completare l'accesso, scegli una nuova password personale.</p>
 
-        <div class="features">
-            <div class="feat">
-                <div class="feat-ico blue">📡</div>
-                <div class="feat-text">
-                    <strong>Dispositivi IoT connessi</strong>
-                    <span>Temperatura, umidità e batteria in tempo reale</span>
+        <div class="info-list">
+            <div class="info-item">
+                <div class="info-icon blue">🔒</div>
+                <div class="info-text">
+                    <strong>Password sicura</strong>
+                    <span>Usa almeno 8 caratteri, con lettere e numeri</span>
                 </div>
             </div>
-            <div class="feat">
-                <div class="feat-ico cyan">📋</div>
-                <div class="feat-text">
-                    <strong>Terapie personalizzate</strong>
-                    <span>Il medico imposta, il paziente viene guidato</span>
+            <div class="info-item">
+                <div class="info-icon green">✅</div>
+                <div class="info-text">
+                    <strong>Accesso immediato</strong>
+                    <span>Dopo il salvataggio potrai accedere subito alla dashboard</span>
                 </div>
             </div>
-            <div class="feat">
-                <div class="feat-ico green">🔔</div>
-                <div class="feat-text">
-                    <strong>Alert e notifiche</strong>
-                    <span>Familiari sempre informati sulle assunzioni</span>
+            <div class="info-item">
+                <div class="info-icon cyan">🛡️</div>
+                <div class="info-text">
+                    <strong>Dati protetti</strong>
+                    <span>La tua password è cifrata e non visibile a nessuno</span>
                 </div>
             </div>
         </div>
@@ -411,80 +370,90 @@
 {{-- ═══ RIGHT PANEL ═══ --}}
 <div class="right">
     <div class="form-box">
-        <h2>Bentornato</h2>
+        <h2>Imposta la password</h2>
+
         @if (session('success'))
-            <div class="alert alert-success">
-                <span>{{ session('success') }}</span>
-            </div>
+            <div class="alert alert-success">{{ session('success') }}</div>
         @endif
 
-        {{-- Errore credenziali --}}
-        @if ($errors->has('email') || session('error'))
+        @if ($errors->any())
             <div class="alert alert-error">
-                <span>⚠️</span>
-                <span>
-                    @if (session('error'))
-                        {{ session('error') }}
-                    @else
-                        {{ $errors->first('email') }}
-                    @endif
-                </span>
+                @foreach ($errors->all() as $error)
+                    <div>{{ $error }}</div>
+                @endforeach
             </div>
         @endif
 
-        <form method="POST" action="{{ route('login') }}">
+        <form method="POST" action="{{ route('first-access.store') }}">
             @csrf
+
 
             {{-- Email --}}
             <div class="field">
-                <label for="password">Nome utente o email</label>
+                <label for="email">Email</label>
                 <div class="input-wrap">
-                    <input type="text" name="login" value="{{ old('login') }}" placeholder="Email o nome utente">
+                    <input
+                        type="email"
+                        id="email"
+                        name="email"
+                        placeholder="la-tua@email.com"
+                        value="{{ old('email') }}"
+                        autocomplete="email"
+                        class="{{ $errors->has('email') ? 'is-invalid' : '' }}"
+                        required
+                    />
                 </div>
+                @error('email') <div class="field-error">{{ $message }}</div> @enderror
             </div>
 
-            {{-- Password --}}
+
+            {{-- Nuova password --}}
             <div class="field">
-                <label for="password">Password</label>
+                <label for="password">Nuova password</label>
                 <div class="input-wrap">
                     <input
                         type="password"
                         id="password"
                         name="password"
-                        placeholder="••••••••"
-                        autocomplete="current-password"
+                        autocomplete="new-password"
                         class="{{ $errors->has('password') ? 'is-invalid' : '' }}"
+                        oninput="checkStrength(this.value)"
                         required
                     />
-                    <button type="button" class="toggle-pw" onclick="togglePw()" id="toggleBtn" title="Mostra/nascondi password">
-                        👁
-                    </button>
+                    <button type="button" class="toggle-pw" onclick="togglePw('password','btn1')" id="btn1">👁</button>
                 </div>
-                @error('password')
-                    <div class="field-error">{{ $message }}</div>
-                @enderror
+                <div class="pw-strength"><div class="pw-strength-bar" id="pw-bar"></div></div>
+                @error('password') <div class="field-error">{{ $message }}</div> @enderror
             </div>
 
-            {{-- Ricordami --}}
-            <div class="form-row">
-                <label class="remember">
-                    <input type="checkbox" name="remember" {{ old('remember') ? 'checked' : '' }}>
-                    Ricordami
-                </label>
-                <a href="{{ route('password.request') }}" style="font-size:13px; color:var(--accent); text-decoration:none;">
-                    Password dimenticata?
-                </a>
+            {{-- Conferma password --}}
+            <div class="field">
+                <label for="password_confirmation">Conferma password</label>
+                <div class="input-wrap">
+                    <input
+                        type="password"
+                        id="password_confirmation"
+                        name="password_confirmation"
+                        autocomplete="new-password"
+                        required
+                    />
+                    <button type="button" class="toggle-pw" onclick="togglePw('password_confirmation','btn2')" id="btn2">👁</button>
+                </div>
             </div>
 
-            <button type="submit" class="btn-submit">Accedi a PillMate</button>
+            <button type="submit" class="btn-submit">Salva e accedi</button>
         </form>
+
+        <div class="back-link">
+            Hai già una password? <a href="{{ route('login') }}">Torna al login</a>
+        </div>
     </div>
 </div>
 
 <script>
-    function togglePw() {
-        const input = document.getElementById('password');
-        const btn   = document.getElementById('toggleBtn');
+    function togglePw(inputId, btnId) {
+        const input = document.getElementById(inputId);
+        const btn   = document.getElementById(btnId);
         if (input.type === 'password') {
             input.type = 'text';
             btn.textContent = '🙈';
@@ -492,6 +461,21 @@
             input.type = 'password';
             btn.textContent = '👁';
         }
+    }
+
+    function checkStrength(value) {
+        const bar = document.getElementById('pw-bar');
+        let score = 0;
+        if (value.length >= 8)          score++;
+        if (/[A-Z]/.test(value))        score++;
+        if (/[0-9]/.test(value))        score++;
+        if (/[^A-Za-z0-9]/.test(value)) score++;
+
+        const colors = ['#ef4444', '#f97316', '#eab308', '#10b981'];
+        const widths = ['25%', '50%', '75%', '100%'];
+
+        bar.style.width      = score > 0 ? widths[score - 1] : '0';
+        bar.style.background = score > 0 ? colors[score - 1] : 'transparent';
     }
 </script>
 

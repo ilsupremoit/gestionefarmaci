@@ -176,6 +176,14 @@
         <p>Ecco il riepilogo di oggi — {{ now()->format('d/m/Y') }}</p>
     </div>
 
+    @if(session('success'))
+        <div style="margin-bottom: 20px; padding: 14px 16px; border-radius: 12px; background: rgba(16,185,129,.1); border: 1px solid rgba(16,185,129,.3); color: #6ee7b7;">{{ session('success') }}</div>
+    @endif
+
+    <div style="display:flex; justify-content:flex-end; margin-bottom:24px;">
+        <a href="{{ route('medico.pazienti.create') }}" style="text-decoration:none; background: linear-gradient(135deg, var(--accent), var(--accent2)); color:#fff; padding:12px 18px; border-radius:12px; font-weight:700;">Aggiungi paziente</a>
+    </div>
+
     <div class="stats">
         <div class="stat-card">
             <div class="stat-top">

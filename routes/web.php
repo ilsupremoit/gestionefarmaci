@@ -1,58 +1,82 @@
 <?php
 
-use App\Http\Controllers\AuthController;
-use App\Http\Controllers\RegisterController;
-use App\Http\Controllers\Medico\DashboardController as MedicoDashboard;
-use App\Http\Controllers\Paziente\DashboardController as PazienteDashboard;
-use App\Http\Controllers\Familiare\DashboardController as FamiliareDashboard;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboard;
+use App\Http\Controllers\AuthController;
+use App\Http\Controllers\Familiare\DashboardController as FamiliareDashboard;
+use App\Http\Controllers\FirstAccessController;
+use App\Http\Controllers\ForgotPasswordController;
+use App\Http\Controllers\Medico\DashboardController as MedicoDashboard;
+use App\Http\Controllers\MedicoPazienteController;
+use App\Http\Controllers\Paziente\DashboardController as PazienteDashboard;
+use Illuminate\Foundation\Auth\EmailVerificationRequest;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use PhpMqtt\Client\Facades\MQTT;
-use App\Http\Controllers\DispenserController;
 
-
-// ── Redirect radice ───────────────────────────────────
 Route::get('/', function () {
     if (Auth::check()) {
         return redirect()->route(Auth::user()->ruolo . '.dashboard');
     }
+
     return redirect()->route('login');
 });
 
-
-Route::get('/mqtt-test', [DispenserController::class, 'inviaComando']);
-// ── Auth (solo per guest) ─────────────────────────────
 Route::middleware('guest')->group(function () {
-    // Login
-    Route::get('/login',    [AuthController::class,  'showLogin'])->name('login');
-    Route::post('/login',   [AuthController::class,  'login']);
+    Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
+    Route::post('/login', [AuthController::class, 'login'])->name('login.attempt');
 
-    // Registrazione
-    Route::get('/register',  [RegisterController::class, 'showRegister'])->name('register');
-    Route::post('/register', [RegisterController::class, 'register']);
+    Route::get('/forgot-password', [ForgotPasswordController::class, 'showForgotForm'])->name('password.request');
+    Route::post('/forgot-password', [ForgotPasswordController::class, 'sendResetLink'])->name('password.email');
+    Route::get('/reset-password/{token}', [ForgotPasswordController::class, 'showResetForm'])->name('password.reset');
+    Route::post('/reset-password', [ForgotPasswordController::class, 'resetPassword'])->name('password.update');
 });
 
-// Logout
 Route::post('/logout', [AuthController::class, 'logout'])
     ->middleware('auth')
     ->name('logout');
 
-// ── Medico ────────────────────────────────────────────
-Route::middleware(['auth', 'role:medico'])->prefix('medico')->name('medico.')->group(function () {
-    Route::get('/dashboard', [MedicoDashboard::class, 'index'])->name('dashboard');
+Route::middleware('auth')->group(function () {
+    Route::get('/primo-accesso', [FirstAccessController::class, 'show'])->name('first-access.show');
+    Route::post('/primo-accesso', [FirstAccessController::class, 'store'])->name('first-access.store');
+
+    Route::get('/email/verifica', function () {
+        return view('auth.verify-email');
+    })->name('verification.notice');
+
+    Route::get('/email/verifica/{id}/{hash}', function (EmailVerificationRequest $request) {
+        $request->fulfill();
+
+        return redirect()->route(auth()->user()->ruolo . '.dashboard')
+            ->with('success', 'Email verificata con successo.');
+    })->middleware(['signed'])->name('verification.verify');
+
+    Route::post('/email/verifica/notifica', function (Request $request) {
+        $request->user()->sendEmailVerificationNotification();
+
+        return back()->with('success', 'Nuova email di verifica inviata.');
+    })->name('verification.send');
 });
 
-// ── Paziente ──────────────────────────────────────────
+Route::get('/mqtt-test', function () {
+    MQTT::publish('pillmate/disp_01/comandi', 'attiva_allarme');
+    return 'Messaggio inviato';
+});
+
+Route::middleware(['auth', 'role:medico'])->prefix('medico')->name('medico.')->group(function () {
+    Route::get('/dashboard', [MedicoDashboard::class, 'index'])->name('dashboard');
+    Route::get('/pazienti/crea', [MedicoPazienteController::class, 'create'])->name('pazienti.create');
+    Route::post('/pazienti', [MedicoPazienteController::class, 'store'])->name('pazienti.store');
+});
+
 Route::middleware(['auth', 'role:paziente'])->prefix('paziente')->name('paziente.')->group(function () {
     Route::get('/dashboard', [PazienteDashboard::class, 'index'])->name('dashboard');
 });
 
-// ── Familiare ─────────────────────────────────────────
 Route::middleware(['auth', 'role:familiare'])->prefix('familiare')->name('familiare.')->group(function () {
     Route::get('/dashboard', [FamiliareDashboard::class, 'index'])->name('dashboard');
 });
 
-// ── Admin ─────────────────────────────────────────────
 Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/dashboard', [AdminDashboard::class, 'index'])->name('dashboard');
 });

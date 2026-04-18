@@ -27,34 +27,38 @@ class AuthController extends Controller
      */
     public function login(Request $request)
     {
-        // Validazione input
         $request->validate([
-            'email'    => ['required', 'email'],
+            'login'    => ['required', 'string'],
             'password' => ['required', 'string', 'min:6'],
         ], [
-            'email.required'    => 'L\'email è obbligatoria.',
-            'email.email'       => 'Inserisci un\'email valida.',
+            'login.required'    => 'Inserisci email o nome utente.',
             'password.required' => 'La password è obbligatoria.',
-            'password.min'      => 'La password deve avere almeno 6 caratteri.',
         ]);
 
-        $credentials = $request->only('email', 'password');
-        $remember    = $request->boolean('remember');
+        $login = $request->input('login');
+        $password = $request->input('password');
+        $remember = $request->boolean('remember');
 
-        // Tentativo di autenticazione sulla tabella `utenti`
-        if (!Auth::attempt($credentials, $remember)) {
+        // capisce se è email o username
+        $field = filter_var($login, FILTER_VALIDATE_EMAIL) ? 'email' : 'username';
+
+        if (!Auth::attempt([$field => $login, 'password' => $password], $remember)) {
             throw ValidationException::withMessages([
-                'email' => 'Credenziali non valide. Controlla email e password.',
+                'login' => 'Credenziali non valide.',
             ]);
         }
 
-        // Rigenera la sessione per sicurezza (CSRF)
         $request->session()->regenerate();
 
-        // Reindirizza in base al ruolo dell'utente
-        return $this->redirectByRole(Auth::user()->ruolo);
-    }
+        $user = Auth::user();
 
+        // 🔴 primo accesso
+        if ($user->must_change_password) {
+            return redirect()->route('first-access.show');
+        }
+
+        return $this->redirectByRole($user->ruolo);
+    }
     /**
      * Gestisce il logout.
      */
