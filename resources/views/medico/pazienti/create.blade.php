@@ -151,6 +151,11 @@
                 </div>
 
                 <div class="field">
+                    <label for="codice_fiscale">Codice fiscale <span class="optional">(opzionale)</span></label>
+                    <input id="codice_fiscale" type="text" name="codice_fiscale" value="{{ old('codice_fiscale') }}" placeholder="es. RSSMRA80A01H501Z" maxlength="16" style="text-transform:uppercase">
+                </div>
+
+                <div class="field">
                     <label for="indirizzo">Indirizzo <span class="optional">(opzionale)</span></label>
                     <input id="indirizzo" type="text" name="indirizzo" value="{{ old('indirizzo') }}" placeholder="es. Via Roma 1, Milano">
                 </div>

@@ -254,6 +254,7 @@ $eta        = $paziente->data_nascita ? \Carbon\Carbon::parse($paziente->data_na
                 @if($utente->email)<span>✉️ {{ $utente->email }}</span>@endif
                 @if($utente->telefono)<span>📞 {{ $utente->telefono }}</span>@endif
                 @if($paziente->indirizzo)<span>📍 {{ $paziente->indirizzo }}</span>@endif
+                @if($paziente->codice_fiscale)<span>🪪 {{ $paziente->codice_fiscale }}</span>@endif
             </div>
             @if($paziente->note_mediche)
             <div style="margin-top:8px; font-size:12px; color:var(--muted); background:rgba(255,255,255,.03); padding:8px 12px; border-radius:8px; border:1px solid var(--border);">
@@ -381,6 +382,94 @@ $eta        = $paziente->data_nascita ? \Carbon\Carbon::parse($paziente->data_na
             @endif
         </div>
 
+    </div>
+
+    {{-- Sezione Dispositivi --}}
+    <div class="card" id="dispositivi" style="margin-bottom:20px;">
+        <div class="card-title">
+            📡 Dispositivi
+            <button class="btn-add-terapia" onclick="toggleSection('formDispositivo')" style="margin-left:auto;">+ Aggiungi dispositivo</button>
+        </div>
+
+        <div class="form-add" id="formDispositivo">
+            <form method="POST" action="{{ route('medico.pazienti.dispositivi.store', $paziente->id) }}">
+                @csrf
+                <div class="form-row">
+                    <div>
+                        <label>Codice seriale ESP32 *</label>
+                        <input type="text" name="codice_seriale" placeholder="es. disp_01" required style="text-transform:lowercase"/>
+                        <small style="color:var(--muted);font-size:11px;margin-top:4px;display:block;">Il codice deve corrispondere all'ID configurato nell'ESP32 (es. <code>disp_01</code>). Il topic MQTT sarà <code>pillmate/{codice}/...</code></small>
+                    </div>
+                    <div>
+                        <label>Nome dispositivo</label>
+                        <input type="text" name="nome_dispositivo" placeholder="es. Dispenser camera da letto"/>
+                    </div>
+                </div>
+                <div style="display:flex;gap:10px;margin-top:4px;">
+                    <button type="submit" class="btn-submit">💾 Aggiungi</button>
+                    <button type="button" onclick="toggleSection('formDispositivo')" style="padding:10px 16px;background:transparent;border:1px solid var(--border);border-radius:8px;color:var(--muted);font-size:13px;cursor:pointer;font-family:inherit;">Annulla</button>
+                </div>
+            </form>
+        </div>
+
+        @forelse($paziente->dispositivi as $d)
+        @php
+            $minutiFa = $d->ultima_connessione ? \Carbon\Carbon::parse($d->ultima_connessione)->diffInMinutes(now()) : null;
+            $online   = $d->stato === 'attivo' && $minutiFa !== null && $minutiFa <= 5;
+        @endphp
+        <div style="display:flex;align-items:center;gap:14px;padding:14px 0;border-bottom:1px solid rgba(31,45,69,.5);">
+            <div style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#1e3a5f,#0e4d6e);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;">💊</div>
+            <div style="flex:1;min-width:0;">
+                <div style="font-weight:700;font-size:14px;">{{ $d->nome_dispositivo ?? 'PillMate Dispenser' }}</div>
+                <div style="font-size:11px;color:var(--muted);">S/N: {{ $d->codice_seriale }} · Topic: <code style="color:var(--accent2);">pillmate/{{ $d->codice_seriale }}/...</code></div>
+            </div>
+            @if($d->allarme_attivo)
+                <span class="device-badge alarm"><span class="dot red"></span>ALLARME</span>
+            @elseif($online)
+                <span class="device-badge attivo"><span class="dot green"></span>Online</span>
+            @else
+                <span class="device-badge offline"><span class="dot gray"></span>{{ ucfirst($d->stato) }}</span>
+            @endif
+            @if($d->temperatura)<span style="font-size:12px;color:var(--muted);">🌡️ {{ $d->temperatura }}°C</span>@endif
+            @if($d->batteria !== null)<span style="font-size:12px;color:{{ $d->batteria < 20 ? 'var(--red)' : 'var(--muted)' }};">🔋 {{ $d->batteria }}%</span>@endif
+            <a href="{{ route('medico.pazienti.dispositivi.show', [$paziente->id, $d->id]) }}" class="btn-add-terapia" style="text-decoration:none;">⚙️ Gestisci →</a>
+        </div>
+        @empty
+        <div style="text-align:center;color:var(--muted);padding:20px;font-size:13px;">Nessun dispositivo associato. Aggiungine uno con il pulsante sopra.</div>
+        @endforelse
+    </div>
+
+    {{-- Sezione Notifiche / Messaggi --}}
+    <div class="card" id="messaggi" style="margin-bottom:20px;">
+        <div class="card-title">
+            💬 Invia messaggio al paziente
+        </div>
+        <form method="POST" action="{{ route('medico.notifiche.invia') }}" style="display:grid;gap:10px;">
+            @csrf
+            <input type="hidden" name="id_utente" value="{{ $paziente->utente->id }}"/>
+            <div class="form-row">
+                <div>
+                    <label>Tipo</label>
+                    <select name="tipo">
+                        <option value="info">ℹ️ Info</option>
+                        <option value="promemoria">⏰ Promemoria</option>
+                        <option value="allarme">🔔 Avviso urgente</option>
+                        <option value="messaggio">💬 Messaggio</option>
+                    </select>
+                </div>
+                <div>
+                    <label>Oggetto *</label>
+                    <input type="text" name="titolo" placeholder="es. Ricordati di prendere la pillola" required/>
+                </div>
+            </div>
+            <div>
+                <label>Testo del messaggio *</label>
+                <textarea name="messaggio" rows="3" placeholder="Scrivi qui il tuo messaggio per il paziente..." required></textarea>
+            </div>
+            <div>
+                <button type="submit" class="btn-submit">📤 Invia notifica</button>
+            </div>
+        </form>
     </div>
 
     {{-- Terapie --}}
@@ -569,6 +658,10 @@ function showToast(msg, type='success') {
 
 function toggleForm() {
     document.getElementById('formTerapia').classList.toggle('open');
+}
+
+function toggleSection(id) {
+    document.getElementById(id).classList.toggle('open');
 }
 
 // Auto-chiudi giorni "Tutti" se si selezionano altri

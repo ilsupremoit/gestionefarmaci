@@ -14,6 +14,7 @@ class Paziente extends Model
         'id_utente',
         'data_nascita',
         'indirizzo',
+        'codice_fiscale',
         'note_mediche',
     ];
 

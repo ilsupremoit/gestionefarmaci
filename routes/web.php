@@ -1,14 +1,16 @@
 <?php
 
-use App\Http\Controllers\MedicoPazienteDetailController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboard;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\Familiare\DashboardController as FamiliareDashboard;
+use App\Http\Controllers\MedicoPazienteDetailController;
+use App\Http\Controllers\Paziente\DashboardController as PazienteDashboard;
 use App\Http\Controllers\FirstAccessController;
 use App\Http\Controllers\ForgotPasswordController;
 use App\Http\Controllers\Medico\DashboardController as MedicoDashboard;
+use App\Http\Controllers\Medico\MedicoController;
 use App\Http\Controllers\MedicoPazienteController;
-use App\Http\Controllers\Paziente\DashboardController as PazienteDashboard;
+use App\Http\Controllers\Paziente\PazienteController;
 use Illuminate\Foundation\Auth\EmailVerificationRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -80,12 +82,31 @@ Route::middleware(['auth', 'role:medico'])->prefix('medico')->name('medico.')->g
     Route::post('/pazienti/{paziente}/eroga', [MedicoPazienteDetailController::class, 'erogazioneForzata'])->name('pazienti.eroga');
     Route::post('/pazienti/{paziente}/allarme', [MedicoPazienteDetailController::class, 'toggleAllarme'])->name('pazienti.allarme');
 
+    // Aggiunge dispositivo al paziente
+    Route::post('/pazienti/{paziente}/dispositivi', [MedicoController::class, 'dispositivoStore'])->name('pazienti.dispositivi.store');
+    // Pagina dettaglio dispositivo
+    Route::get('/pazienti/{paziente}/dispositivi/{dispositivo}', [MedicoController::class, 'dispositivoShow'])->name('pazienti.dispositivi.show');
+    // Invia comando MQTT
+    Route::post('/pazienti/{paziente}/dispositivi/{dispositivo}/comando', [MedicoController::class, 'dispositivoComando'])->name('pazienti.dispositivi.comando');
+    // Polling telemetria live (AJAX)
+    Route::get('/pazienti/{paziente}/dispositivi/{dispositivo}/telemetria-live', [MedicoController::class, 'telemetriaLive'])->name('pazienti.dispositivi.telemetria');
+
     // Aggiorna stato assunzione (AJAX)
     Route::patch('/assunzioni/{assunzione}', [MedicoPazienteDetailController::class, 'aggiornaAssunzione'])->name('assunzioni.update');
+
+    // Notifiche medico
+    Route::get('/notifiche', [MedicoController::class, 'notifiche'])->name('notifiche');
+    Route::post('/notifiche', [MedicoController::class, 'inviaNotifica'])->name('notifiche.invia');
 });
 
 Route::middleware(['auth', 'role:paziente'])->prefix('paziente')->name('paziente.')->group(function () {
-    Route::get('/dashboard', [PazienteDashboard::class, 'index'])->name('dashboard');
+    Route::get('/dashboard',                    [PazienteDashboard::class, 'index'])->name('dashboard');
+    Route::get('/terapie',                      [PazienteController::class, 'terapie'])->name('terapie');
+    Route::get('/storico',                      [PazienteController::class, 'storico'])->name('storico');
+    Route::get('/storico/{assunzione}',         [PazienteController::class, 'assunzioneShow'])->name('assunzione.show');
+    Route::get('/dispositivi',                  [PazienteController::class, 'dispositivi'])->name('dispositivi');
+    Route::get('/notifiche',                    [PazienteController::class, 'notifiche'])->name('notifiche');
+    Route::post('/notifiche',                   [PazienteController::class, 'inviaMessaggio'])->name('notifiche.invia');
 });
 
 Route::middleware(['auth', 'role:familiare'])->prefix('familiare')->name('familiare.')->group(function () {

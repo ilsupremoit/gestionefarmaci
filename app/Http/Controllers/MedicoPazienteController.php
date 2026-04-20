@@ -66,6 +66,7 @@ class MedicoPazienteController extends Controller
             'password_temp' => ['required', 'string', 'min:6'],
             'email'         => ['nullable', 'email', 'max:100', 'unique:users,email'],
             'telefono'      => ['nullable', 'string', 'max:20'],
+            'codice_fiscale'=> ['nullable', 'string', 'size:16', 'unique:pazienti,codice_fiscale'],
             'data_nascita'  => ['nullable', 'date'],
             'indirizzo'     => ['nullable', 'string', 'max:150'],
             'note_mediche'  => ['nullable', 'string'],
@@ -92,10 +93,11 @@ class MedicoPazienteController extends Controller
             ]);
 
             $paziente = Paziente::create([
-                'id_utente'    => $user->id,
-                'data_nascita' => $request->data_nascita,
-                'indirizzo'    => $request->indirizzo,
-                'note_mediche' => $request->note_mediche,
+                'id_utente'      => $user->id,
+                'data_nascita'   => $request->data_nascita,
+                'indirizzo'      => $request->indirizzo,
+                'codice_fiscale' => $request->codice_fiscale ? strtoupper($request->codice_fiscale) : null,
+                'note_mediche'   => $request->note_mediche,
             ]);
 
             DB::table('medici_pazienti')->insert([
