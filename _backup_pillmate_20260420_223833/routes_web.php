@@ -116,21 +116,3 @@ Route::middleware(['auth', 'role:familiare'])->prefix('familiare')->name('famili
 Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/dashboard', [AdminDashboard::class, 'index'])->name('dashboard');
 });
-
-
-// ============================================================
-// PillMate - Route aggiunte automaticamente (pillmate:routes)
-// ============================================================
-use App\Http\Controllers\DispositivoController;
-use App\Http\Controllers\MqttController;
-
-Route::get('/dispositivi/{idDispositivo}/scomparti',      [DispositivoController::class, 'scomparti'])->name('dispositivi.scomparti');
-Route::post('/dispositivi/{idDispositivo}/scomparti',     [DispositivoController::class, 'salvaScomparti'])->name('dispositivi.scomparti.salva');
-Route::patch('/dispositivi/{idDispositivo}/scomparti/{numeroScomparto}/stato', [DispositivoController::class, 'aggiornaStato'])->name('dispositivi.scomparti.stato');
-
-Route::post('/mqtt/{idDispositivo}/configura-scomparti',  [MqttController::class, 'configuraScomparti'])->name('mqtt.configuraScomparti');
-Route::post('/mqtt/{idDispositivo}/attiva-allarme',       [MqttController::class, 'attivaAllarme'])->name('mqtt.attivaAllarme');
-Route::post('/mqtt/{idDispositivo}/eroga-farmaco',        [MqttController::class, 'erogaFarmaco'])->name('mqtt.erogaFarmaco');
-Route::post('/mqtt/{idDispositivo}/set-sveglia',          [MqttController::class, 'setSveglia'])->name('mqtt.setSveglia');
-Route::get('/mqtt/{idDispositivo}/mappa-scomparti',       [MqttController::class, 'richiediMappa'])->name('mqtt.richiediMappa');
-Route::post('/mqtt/{idDispositivo}/buzzer-test',          [MqttController::class, 'testBuzzer'])->name('mqtt.testBuzzer');
