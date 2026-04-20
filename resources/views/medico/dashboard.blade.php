@@ -8,16 +8,18 @@
     <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
     <style>
         :root {
-            --bg:      #0b0f1a;
-            --surface: #111827;
-            --border:  #1f2d45;
-            --accent:  #3b82f6;
-            --accent2: #06b6d4;
-            --green:   #10b981;
-            --red:     #ef4444;
-            --yellow:  #f59e0b;
-            --text:    #e2e8f0;
+            --bg:      #f0f7ff;
+            --surface: #ffffff;
+            --border:  #dde8f5;
+            --accent:  #2563eb;
+            --accent2: #0891b2;
+            --green:   #059669;
+            --red:     #dc2626;
+            --yellow:  #d97706;
+            --text:    #1e293b;
             --muted:   #64748b;
+            --shadow:  0 2px 12px rgba(37,99,235,.08);
+            --shadow-md: 0 4px 20px rgba(37,99,235,.12);
         }
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; display: flex; }
@@ -27,86 +29,92 @@
             width: 240px; flex-shrink: 0;
             background: var(--surface);
             border-right: 1px solid var(--border);
+            box-shadow: 2px 0 12px rgba(0,0,0,.04);
             display: flex; flex-direction: column;
             padding: 28px 0;
             position: fixed; top: 0; left: 0; height: 100vh;
         }
         .brand {
-            display: flex; align-items: center; gap: 12px;
-            padding: 0 24px 28px;
+            display: flex; align-items: center; gap: 10px;
+            padding: 0 24px 24px;
             border-bottom: 1px solid var(--border);
             margin-bottom: 20px;
         }
         .brand-icon {
-            width: 38px; height: 38px;
+            width: 36px; height: 36px;
             background: linear-gradient(135deg, var(--accent), var(--accent2));
             border-radius: 10px;
             display: flex; align-items: center; justify-content: center;
-            font-size: 18px;
+            font-size: 17px;
         }
         .brand-name {
-            font-family: 'Syne', sans-serif; font-size: 20px; font-weight: 800;
-            background: linear-gradient(135deg, #fff, var(--accent2));
-            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            font-family: 'Syne', sans-serif; font-size: 19px; font-weight: 800;
+            color: var(--text);
         }
         .nav-label {
             font-size: 10px; font-weight: 700; text-transform: uppercase;
-            letter-spacing: 1px; color: var(--muted);
-            padding: 0 24px; margin-bottom: 8px;
+            letter-spacing: 1px; color: #94a3b8;
+            padding: 0 24px; margin-bottom: 6px;
         }
         .nav-item {
-            display: flex; align-items: center; gap: 12px;
+            display: flex; align-items: center; gap: 11px;
             padding: 10px 24px; font-size: 14px; color: var(--muted);
-            text-decoration: none; transition: all .2s; border-radius: 0;
-            cursor: pointer;
+            text-decoration: none; transition: all .18s;
         }
-        .nav-item:hover { color: var(--text); background: rgba(255,255,255,.04); }
-        .nav-item.active { color: var(--accent); background: rgba(59,130,246,.08); border-right: 2px solid var(--accent); }
+        .nav-item:hover { color: var(--text); background: #f1f5f9; }
+        .nav-item.active {
+            color: var(--accent); background: #eff6ff;
+            border-right: 3px solid var(--accent);
+            font-weight: 600;
+        }
         .nav-item .ico { font-size: 16px; width: 20px; text-align: center; }
         .sidebar-footer {
-            margin-top: auto; padding: 0 24px 0;
-            border-top: 1px solid var(--border); padding-top: 20px;
+            margin-top: auto; padding: 20px 24px 0;
+            border-top: 1px solid var(--border);
         }
         .user-info { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
         .avatar {
             width: 36px; height: 36px; border-radius: 50%;
             background: linear-gradient(135deg, var(--accent), var(--accent2));
             display: flex; align-items: center; justify-content: center;
-            font-size: 14px; font-weight: 700;
+            font-size: 14px; font-weight: 700; color: #fff;
         }
-        .user-name { font-size: 13px; font-weight: 600; }
+        .user-name { font-size: 13px; font-weight: 600; color: var(--text); }
         .user-role { font-size: 11px; color: var(--muted); }
         .btn-logout {
             width: 100%; padding: 9px;
-            background: rgba(239,68,68,.1); border: 1px solid rgba(239,68,68,.2);
-            border-radius: 8px; color: #fca5a5; font-size: 13px;
-            cursor: pointer; transition: all .2s; font-family: inherit;
+            background: #fef2f2; border: 1px solid #fecaca;
+            border-radius: 8px; color: #b91c1c; font-size: 13px;
+            cursor: pointer; transition: all .2s; font-family: inherit; font-weight: 600;
         }
-        .btn-logout:hover { background: rgba(239,68,68,.2); }
+        .btn-logout:hover { background: #fee2e2; }
 
         /* Main */
         .main { margin-left: 240px; flex: 1; padding: 36px 40px; }
-        .page-header { margin-bottom: 32px; }
-        .page-header h1 { font-family: 'Syne', sans-serif; font-size: 26px; font-weight: 700; margin-bottom: 4px; }
+        .page-header { margin-bottom: 28px; }
+        .page-header h1 { font-family: 'Syne', sans-serif; font-size: 26px; font-weight: 700; margin-bottom: 4px; color: var(--text); }
         .page-header p { color: var(--muted); font-size: 14px; }
 
         /* Stats cards */
-        .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 32px; }
+        .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 28px; }
         .stat-card {
             background: var(--surface); border: 1px solid var(--border);
             border-radius: 14px; padding: 20px;
+            box-shadow: var(--shadow);
+            transition: box-shadow .2s;
         }
-        .stat-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+        .stat-card:hover { box-shadow: var(--shadow-md); }
+        .stat-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
         .stat-label { font-size: 12px; color: var(--muted); font-weight: 500; }
         .stat-ico {
             width: 36px; height: 36px; border-radius: 9px;
             display: flex; align-items: center; justify-content: center; font-size: 16px;
         }
-        .stat-ico.blue  { background: rgba(59,130,246,.15); }
-        .stat-ico.green { background: rgba(16,185,129,.15); }
-        .stat-ico.yellow{ background: rgba(245,158,11,.15); }
-        .stat-ico.red   { background: rgba(239,68,68,.15); }
-        .stat-value { font-family: 'Syne', sans-serif; font-size: 28px; font-weight: 700; }
+        .stat-ico.blue   { background: #dbeafe; }
+        .stat-ico.green  { background: #d1fae5; }
+        .stat-ico.yellow { background: #fef3c7; }
+        .stat-ico.red    { background: #fee2e2; }
+        .stat-value { font-family: 'Syne', sans-serif; font-size: 30px; font-weight: 700; color: var(--text); }
         .stat-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
 
         /* Content grid */
@@ -114,12 +122,46 @@
         .card {
             background: var(--surface); border: 1px solid var(--border);
             border-radius: 14px; padding: 22px;
+            box-shadow: var(--shadow);
         }
         .card-title {
             font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 700;
-            margin-bottom: 18px; display: flex; align-items: center; gap: 8px;
+            margin-bottom: 16px; display: flex; align-items: center; gap: 8px;
+            color: var(--text);
         }
-        .empty-state { text-align: center; color: var(--muted); font-size: 13px; padding: 20px 0; }
+        .empty-state { text-align: center; color: var(--muted); font-size: 13px; padding: 24px 0; }
+
+        .alert-success-banner {
+            margin-bottom: 20px; padding: 14px 16px; border-radius: 12px;
+            background: #f0fdf4; border: 1px solid #bbf7d0; color: #15803d;
+            font-size: 14px;
+        }
+
+        .btn-add {
+            text-decoration: none;
+            background: linear-gradient(135deg, var(--accent), var(--accent2));
+            color: #fff; padding: 11px 18px;
+            border-radius: 10px; font-weight: 700; font-size: 14px;
+            box-shadow: 0 4px 14px rgba(37,99,235,.25);
+            transition: opacity .2s, transform .15s;
+        }
+        .btn-add:hover { opacity: .92; transform: translateY(-1px); }
+
+        .paziente-row {
+            display: flex; align-items: center; gap: 12px;
+            padding: 10px 0; border-bottom: 1px solid var(--border);
+        }
+        .paziente-row:last-child { border-bottom: none; }
+
+        .paz-avatar {
+            width: 36px; height: 36px; border-radius: 10px;
+            background: linear-gradient(135deg, #dbeafe, #cffafe);
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 700; font-size: 12px; color: var(--accent);
+            flex-shrink: 0;
+        }
+        .paz-name { font-weight: 600; font-size: 13px; color: var(--text); }
+        .paz-meta { font-size: 11px; color: var(--muted); }
 
         @media (max-width: 1024px) {
             .stats { grid-template-columns: repeat(2, 1fr); }
@@ -135,17 +177,18 @@
 
 <aside class="sidebar">
     <div class="brand">
+        <div class="brand-icon">💊</div>
         <span class="brand-name">PillMate</span>
     </div>
 
     <div class="nav-label">Menu</div>
-    <a class="nav-item active" href="#">
+    <a class="nav-item active" href="{{ route('medico.dashboard') }}">
         <span class="ico">🏠</span> Dashboard
     </a>
     <a class="nav-item" href="{{ route('medico.pazienti.index') }}">
         <span class="ico">👥</span> I miei pazienti
     </a>
-    <a class="nav-item" href="#">
+    <a class="nav-item" href="{{ route('medico.notifiche') }}">
         <span class="ico">🔔</span> Notifiche
     </a>
 
@@ -166,16 +209,16 @@
 
 <main class="main">
     <div class="page-header">
-        <h1>Benvenuto, Dr. {{ $medico->cognome }} 👋</h1>
-        <p>Ecco il riepilogo di oggi — {{ now()->format('d/m/Y') }}</p>
+        <h1>Buongiorno, Dr. {{ $medico->cognome }} 👋</h1>
+        <p>Ecco il riepilogo di oggi — {{ now()->translatedFormat('l d F Y') }}</p>
     </div>
 
     @if(session('success'))
-        <div style="margin-bottom: 20px; padding: 14px 16px; border-radius: 12px; background: rgba(16,185,129,.1); border: 1px solid rgba(16,185,129,.3); color: #6ee7b7;">{{ session('success') }}</div>
+        <div class="alert-success-banner">✅ {{ session('success') }}</div>
     @endif
 
-    <div style="display:flex; justify-content:flex-end; margin-bottom:24px;">
-        <a href="{{ route('medico.pazienti.create') }}" style="text-decoration:none; background: linear-gradient(135deg, var(--accent), var(--accent2)); color:#fff; padding:12px 18px; border-radius:12px; font-weight:700;">Aggiungi paziente</a>
+    <div style="display:flex; justify-content:flex-end; margin-bottom:22px;">
+        <a href="{{ route('medico.pazienti.create') }}" class="btn-add">+ Aggiungi paziente</a>
     </div>
 
     <div class="stats">
@@ -217,25 +260,33 @@
         <div class="card">
             <div class="card-title">👥 Ultimi pazienti</div>
             @forelse($ultimiPazienti as $paz)
-            @php $u = $paz->utente; $hasAlarm = $paz->dispositivi->where('allarme_attivo', true)->isNotEmpty(); @endphp
-            <div style="display:flex; align-items:center; gap:12px; padding:10px 0; border-bottom:1px solid var(--border);">
-                <div style="width:36px; height:36px; border-radius:10px; background:linear-gradient(135deg,#1e3a5f,#0e4d6e); display:flex; align-items:center; justify-content:center; font-weight:700; font-size:13px; color:var(--accent2); flex-shrink:0;">
-                    {{ strtoupper(substr($u->nome,0,1)) }}{{ strtoupper(substr($u->cognome,0,1)) }}
+                @php $u = $paz->utente; $hasAlarm = $paz->dispositivi->where('allarme_attivo', true)->isNotEmpty(); @endphp
+                <div class="paziente-row">
+                    <div class="paz-avatar">
+                        {{ strtoupper(substr($u->nome,0,1)) }}{{ strtoupper(substr($u->cognome,0,1)) }}
+                    </div>
+                    <div style="flex:1; min-width:0;">
+                        <div class="paz-name">{{ $u->cognome }} {{ $u->nome }}</div>
+                        <div class="paz-meta">{{ $paz->terapie->where('attiva',true)->count() }} terapie attive</div>
+                    </div>
+                    @if($hasAlarm)
+                        <span style="color:var(--red); font-size:11px; font-weight:600; background:#fee2e2; padding:3px 8px; border-radius:20px;">⚠ Allarme</span>
+                    @endif
+                    <a href="{{ route('medico.pazienti.show', $paz->id) }}" style="font-size:12px; color:var(--accent); text-decoration:none; font-weight:600; white-space:nowrap;">Dettaglio →</a>
                 </div>
-                <div style="flex:1; min-width:0;">
-                    <div style="font-weight:600; font-size:13px;">{{ $u->cognome }} {{ $u->nome }}</div>
-                    <div style="font-size:11px; color:var(--muted);">{{ $paz->terapie->where('attiva',true)->count() }} terapie attive</div>
-                </div>
-                @if($hasAlarm)<span style="color:var(--red); font-size:11px;">⚠ Allarme</span>@endif
-                <a href="{{ route('medico.pazienti.show', $paz->id) }}" style="font-size:12px; color:var(--accent); text-decoration:none;">Dettaglio →</a>
-            </div>
             @empty
-            <div class="empty-state">Nessun paziente ancora assegnato.</div>
+                <div class="empty-state">Nessun paziente ancora assegnato.</div>
             @endforelse
         </div>
         <div class="card">
             <div class="card-title">🔔 Notifiche recenti</div>
-            <div class="empty-state">Nessuna notifica.</div>
+            <div class="empty-state">
+                <div style="font-size:32px; margin-bottom:8px;">🔔</div>
+                Nessuna notifica recente.
+                <div style="margin-top:12px;">
+                    <a href="{{ route('medico.notifiche') }}" style="color:var(--accent); font-size:13px; font-weight:600; text-decoration:none;">Vai alle notifiche →</a>
+                </div>
+            </div>
         </div>
     </div>
 </main>

@@ -8,15 +8,16 @@
     <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
     <style>
         :root {
-            --bg:      #0b0f1a;
-            --surface: #111827;
-            --border:  #1f2d45;
-            --accent:  #3b82f6;
-            --accent2: #06b6d4;
-            --green:   #10b981;
-            --red:     #ef4444;
-            --text:    #e2e8f0;
+            --bg:      #f0f7ff;
+            --surface: #ffffff;
+            --border:  #dde8f5;
+            --accent:  #2563eb;
+            --accent2: #0891b2;
+            --green:   #059669;
+            --red:     #dc2626;
+            --text:    #1e293b;
             --muted:   #64748b;
+            --shadow:  0 2px 16px rgba(37,99,235,.10);
         }
 
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -38,24 +39,24 @@
             justify-content: center;
             padding: 60px;
             overflow: hidden;
-            background: var(--surface);
-            border-right: 1px solid var(--border);
+            background: linear-gradient(145deg, #1d4ed8 0%, #0891b2 100%);
+            color: #fff;
         }
 
         .orb {
             position: absolute;
             border-radius: 50%;
-            filter: blur(80px);
-            opacity: .25;
+            filter: blur(70px);
+            opacity: .18;
             animation: drift 8s ease-in-out infinite alternate;
         }
-        .orb-1 { width: 380px; height: 380px; background: var(--accent);  top: -80px;  left: -80px; animation-delay: 0s; }
-        .orb-2 { width: 300px; height: 300px; background: var(--accent2); bottom: 40px; right: -60px; animation-delay: 2s; }
-        .orb-3 { width: 200px; height: 200px; background: var(--green);   bottom: 160px; left: 80px; animation-delay: 4s; }
+        .orb-1 { width: 360px; height: 360px; background: #fff; top: -80px; left: -80px; }
+        .orb-2 { width: 280px; height: 280px; background: #bfdbfe; bottom: 40px; right: -60px; animation-delay: 2s; }
+        .orb-3 { width: 180px; height: 180px; background: #67e8f9; bottom: 200px; left: 80px; animation-delay: 4s; }
 
         @keyframes drift {
-            from { transform: translate(0, 0) scale(1); }
-            to   { transform: translate(20px, 20px) scale(1.08); }
+            from { transform: translate(0,0) scale(1); }
+            to   { transform: translate(18px,18px) scale(1.07); }
         }
 
         .left-content { position: relative; z-index: 1; }
@@ -63,63 +64,57 @@
         .brand {
             display: flex;
             align-items: center;
-            gap: 14px;
-            margin-bottom: 56px;
+            gap: 12px;
+            margin-bottom: 52px;
         }
 
         .brand-icon {
-            width: 46px; height: 46px;
-            background: linear-gradient(135deg, var(--accent), var(--accent2));
-            border-radius: 13px;
+            width: 44px; height: 44px;
+            background: rgba(255,255,255,.2);
+            border-radius: 12px;
             display: flex; align-items: center; justify-content: center;
             font-size: 22px;
-            box-shadow: 0 0 30px rgba(59,130,246,.4);
+            backdrop-filter: blur(8px);
         }
 
         .brand-name {
             font-family: 'Syne', sans-serif;
-            font-size: 26px;
+            font-size: 24px;
             font-weight: 800;
-            background: linear-gradient(135deg, #fff, var(--accent2));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+            color: #fff;
         }
 
         .left h1 {
             font-family: 'Syne', sans-serif;
-            font-size: 40px;
+            font-size: 38px;
             font-weight: 800;
-            line-height: 1.15;
-            margin-bottom: 18px;
-        }
-
-        .left h1 span {
-            background: linear-gradient(90deg, var(--accent), var(--accent2));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+            line-height: 1.2;
+            margin-bottom: 16px;
+            color: #fff;
         }
 
         .left p {
             font-size: 15px;
-            color: var(--muted);
+            color: rgba(255,255,255,.8);
             line-height: 1.7;
             max-width: 360px;
-            margin-bottom: 48px;
+            margin-bottom: 44px;
         }
 
-        .features { display: flex; flex-direction: column; gap: 14px; }
+        .features { display: flex; flex-direction: column; gap: 12px; }
 
         .feat {
             display: flex;
             align-items: center;
             gap: 14px;
-            padding: 14px 18px;
-            background: rgba(255,255,255,.04);
-            border: 1px solid var(--border);
+            padding: 14px 16px;
+            background: rgba(255,255,255,.12);
+            border: 1px solid rgba(255,255,255,.2);
             border-radius: 12px;
             font-size: 13px;
             backdrop-filter: blur(8px);
             animation: fadeUp .5s ease both;
+            color: #fff;
         }
         .feat:nth-child(1) { animation-delay: .1s; }
         .feat:nth-child(2) { animation-delay: .2s; }
@@ -131,13 +126,11 @@
             display: flex; align-items: center; justify-content: center;
             font-size: 17px;
             flex-shrink: 0;
+            background: rgba(255,255,255,.2);
         }
-        .feat-ico.blue  { background: rgba(59,130,246,.15); }
-        .feat-ico.cyan  { background: rgba(6,182,212,.15); }
-        .feat-ico.green { background: rgba(16,185,129,.15); }
 
-        .feat-text strong { display: block; font-weight: 500; font-size: 13px; margin-bottom: 2px; }
-        .feat-text span   { color: var(--muted); font-size: 12px; }
+        .feat-text strong { display: block; font-weight: 600; font-size: 13px; margin-bottom: 2px; }
+        .feat-text span   { color: rgba(255,255,255,.7); font-size: 12px; }
 
         /* ── Right panel ─────────────────────────────── */
         .right {
@@ -145,6 +138,7 @@
             align-items: center;
             justify-content: center;
             padding: 60px 48px;
+            background: var(--bg);
         }
 
         .form-box {
@@ -157,13 +151,14 @@
             font-family: 'Syne', sans-serif;
             font-size: 26px;
             font-weight: 700;
-            margin-bottom: 40px;
+            margin-bottom: 8px;
+            color: var(--text);
         }
 
         .form-box .subtitle {
             color: var(--muted);
             font-size: 14px;
-            margin-bottom: 36px;
+            margin-bottom: 32px;
         }
 
         /* Alerts */
@@ -173,76 +168,67 @@
             gap: 10px;
             border-radius: 10px;
             padding: 12px 14px;
-            margin-bottom: 24px;
+            margin-bottom: 20px;
             font-size: 13px;
         }
         .alert-error {
-            background: rgba(239,68,68,.1);
-            border: 1px solid rgba(239,68,68,.3);
-            color: #fca5a5;
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            color: #b91c1c;
             animation: shake .35s ease;
         }
         .alert-success {
-            background: rgba(16,185,129,.1);
-            border: 1px solid rgba(16,185,129,.3);
-            color: #6ee7b7;
+            background: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            color: #15803d;
         }
 
         @keyframes shake {
             0%,100% { transform: translateX(0); }
-            25%      { transform: translateX(-5px); }
-            75%      { transform: translateX(5px); }
+            25%      { transform: translateX(-4px); }
+            75%      { transform: translateX(4px); }
         }
 
         /* Form fields */
-        .field { margin-bottom: 20px; }
+        .field { margin-bottom: 18px; }
 
         .field label {
             display: block;
             font-size: 12px;
             font-weight: 600;
             text-transform: uppercase;
-            letter-spacing: .8px;
+            letter-spacing: .7px;
             color: var(--muted);
-            margin-bottom: 8px;
+            margin-bottom: 7px;
         }
 
         .input-wrap { position: relative; }
 
-        .input-wrap .ico {
-            position: absolute;
-            left: 14px;
-            top: 50%;
-            transform: translateY(-50%);
-            font-size: 16px;
-            pointer-events: none;
-            opacity: .5;
-        }
-
         .input-wrap input {
             width: 100%;
             background: var(--surface);
-            border: 1px solid var(--border);
+            border: 1.5px solid var(--border);
             border-radius: 10px;
-            padding: 12px 14px 12px 42px;
+            padding: 12px 14px;
             color: var(--text);
             font-family: 'DM Sans', sans-serif;
             font-size: 14px;
             outline: none;
             transition: border-color .2s, box-shadow .2s;
+            box-shadow: var(--shadow);
         }
 
         .input-wrap input:focus {
             border-color: var(--accent);
-            box-shadow: 0 0 0 3px rgba(59,130,246,.15);
+            box-shadow: 0 0 0 3px rgba(37,99,235,.12);
         }
 
         .input-wrap input.is-invalid {
             border-color: var(--red);
-            box-shadow: 0 0 0 3px rgba(239,68,68,.1);
+            box-shadow: 0 0 0 3px rgba(220,38,38,.08);
         }
 
-        .input-wrap input::placeholder { color: var(--muted); }
+        .input-wrap input::placeholder { color: #cbd5e1; }
 
         .toggle-pw {
             position: absolute;
@@ -253,7 +239,7 @@
             border: none;
             color: var(--muted);
             cursor: pointer;
-            font-size: 16px;
+            font-size: 15px;
             padding: 4px;
             transition: color .2s;
         }
@@ -262,14 +248,14 @@
         .field-error {
             font-size: 11px;
             color: var(--red);
-            margin-top: 5px;
+            margin-top: 4px;
         }
 
         .form-row {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            margin-bottom: 28px;
+            margin-bottom: 24px;
         }
 
         .remember {
@@ -299,60 +285,11 @@
             font-weight: 700;
             cursor: pointer;
             transition: opacity .2s, transform .15s, box-shadow .2s;
-            box-shadow: 0 4px 20px rgba(59,130,246,.35);
+            box-shadow: 0 4px 16px rgba(37,99,235,.3);
             letter-spacing: .3px;
         }
-        .btn-submit:hover  { opacity: .9; transform: translateY(-1px); box-shadow: 0 6px 28px rgba(59,130,246,.45); }
+        .btn-submit:hover  { opacity: .92; transform: translateY(-1px); box-shadow: 0 6px 22px rgba(37,99,235,.35); }
         .btn-submit:active { transform: translateY(0); }
-
-        .divider {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            margin: 24px 0 16px;
-            color: var(--muted);
-            font-size: 12px;
-        }
-        .divider::before, .divider::after {
-            content: '';
-            flex: 1;
-            height: 1px;
-            background: var(--border);
-        }
-
-        .register-link {
-            text-align: center;
-            font-size: 13px;
-            color: var(--muted);
-            margin-top: 4px;
-        }
-
-        .register-link a {
-            color: var(--accent);
-            font-weight: 600;
-            text-decoration: none;
-        }
-        .register-link a:hover { text-decoration: underline; }
-
-        .roles {
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-            margin-top: 16px;
-        }
-
-        .role-chip {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            padding: 6px 12px;
-            border: 1px solid var(--border);
-            border-radius: 20px;
-            font-size: 12px;
-            color: var(--muted);
-            background: rgba(255,255,255,.03);
-        }
-        .role-chip span { font-size: 14px; }
 
         @keyframes fadeUp {
             from { opacity: 0; transform: translateY(14px); }
@@ -376,29 +313,30 @@
 
     <div class="left-content">
         <div class="brand">
+            <div class="brand-icon">💊</div>
             <span class="brand-name">PillMate</span>
         </div>
 
-        <h1>Gestione terapie<br><span>intelligente e sicura</span></h1>
+        <h1>Gestione terapie<br>semplice e sicura</h1>
         <p>Monitoraggio in tempo reale delle somministrazioni, dispositivi IoT e comunicazione continua tra medici, pazienti e familiari.</p>
 
         <div class="features">
             <div class="feat">
-                <div class="feat-ico blue">📡</div>
+                <div class="feat-ico">📡</div>
                 <div class="feat-text">
                     <strong>Dispositivi IoT connessi</strong>
                     <span>Temperatura, umidità e batteria in tempo reale</span>
                 </div>
             </div>
             <div class="feat">
-                <div class="feat-ico cyan">📋</div>
+                <div class="feat-ico">📋</div>
                 <div class="feat-text">
                     <strong>Terapie personalizzate</strong>
                     <span>Il medico imposta, il paziente viene guidato</span>
                 </div>
             </div>
             <div class="feat">
-                <div class="feat-ico green">🔔</div>
+                <div class="feat-ico">🔔</div>
                 <div class="feat-text">
                     <strong>Alert e notifiche</strong>
                     <span>Familiari sempre informati sulle assunzioni</span>
@@ -411,20 +349,24 @@
 {{-- ═══ RIGHT PANEL ═══ --}}
 <div class="right">
     <div class="form-box">
-        <h2>Bentornato</h2>
+        <h2>Bentornato 👋</h2>
+        <p class="subtitle">Accedi al tuo account PillMate</p>
+
         @if (session('success'))
             <div class="alert alert-success">
+                <span>✅</span>
                 <span>{{ session('success') }}</span>
             </div>
         @endif
 
-        {{-- Errore credenziali --}}
-        @if ($errors->has('email') || session('error'))
+        @if ($errors->has('email') || $errors->has('login') || session('error'))
             <div class="alert alert-error">
                 <span>⚠️</span>
                 <span>
                     @if (session('error'))
                         {{ session('error') }}
+                    @elseif($errors->has('login'))
+                        {{ $errors->first('login') }}
                     @else
                         {{ $errors->first('email') }}
                     @endif
@@ -435,15 +377,21 @@
         <form method="POST" action="{{ route('login') }}">
             @csrf
 
-            {{-- Email --}}
             <div class="field">
-                <label for="password">Nome utente o email</label>
+                <label for="login">Nome utente o email</label>
                 <div class="input-wrap">
-                    <input type="text" name="login" value="{{ old('login') }}" placeholder="Email o nome utente">
+                    <input
+                        type="text"
+                        id="login"
+                        name="login"
+                        value="{{ old('login') }}"
+                        placeholder="mario.rossi o mario@email.it"
+                        autocomplete="username"
+                        required
+                    />
                 </div>
             </div>
 
-            {{-- Password --}}
             <div class="field">
                 <label for="password">Password</label>
                 <div class="input-wrap">
@@ -456,27 +404,24 @@
                         class="{{ $errors->has('password') ? 'is-invalid' : '' }}"
                         required
                     />
-                    <button type="button" class="toggle-pw" onclick="togglePw()" id="toggleBtn" title="Mostra/nascondi password">
-                        👁
-                    </button>
+                    <button type="button" class="toggle-pw" onclick="togglePw()" id="toggleBtn" title="Mostra/nascondi">👁</button>
                 </div>
                 @error('password')
                     <div class="field-error">{{ $message }}</div>
                 @enderror
             </div>
 
-            {{-- Ricordami --}}
             <div class="form-row">
                 <label class="remember">
                     <input type="checkbox" name="remember" {{ old('remember') ? 'checked' : '' }}>
                     Ricordami
                 </label>
-                <a href="{{ route('password.request') }}" style="font-size:13px; color:var(--accent); text-decoration:none;">
+                <a href="{{ route('password.request') }}" style="font-size:13px; color:var(--accent); text-decoration:none; font-weight:600;">
                     Password dimenticata?
                 </a>
             </div>
 
-            <button type="submit" class="btn-submit">Accedi a PillMate</button>
+            <button type="submit" class="btn-submit">Accedi a PillMate →</button>
         </form>
     </div>
 </div>
@@ -485,13 +430,8 @@
     function togglePw() {
         const input = document.getElementById('password');
         const btn   = document.getElementById('toggleBtn');
-        if (input.type === 'password') {
-            input.type = 'text';
-            btn.textContent = '🙈';
-        } else {
-            input.type = 'password';
-            btn.textContent = '👁';
-        }
+        input.type  = input.type === 'password' ? 'text' : 'password';
+        btn.textContent = input.type === 'password' ? '👁' : '🙈';
     }
 </script>
 

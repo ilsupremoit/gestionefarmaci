@@ -273,12 +273,13 @@ INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES
 CREATE TABLE `notifiche` (
                              `id` bigint(20) UNSIGNED NOT NULL,
                              `id_utente` bigint(20) UNSIGNED NOT NULL,
+                             `id_mittente` bigint(20) UNSIGNED DEFAULT NULL,
                              `id_paziente` bigint(20) UNSIGNED DEFAULT NULL,
                              `id_dispositivo` bigint(20) UNSIGNED DEFAULT NULL,
                              `id_assunzione` bigint(20) UNSIGNED DEFAULT NULL,
                              `titolo` varchar(100) NOT NULL,
                              `messaggio` text NOT NULL,
-                             `tipo` enum('promemoria','allarme','errore','info') NOT NULL DEFAULT 'info',
+                             `tipo` enum('promemoria','allarme','errore','info','messaggio') NOT NULL DEFAULT 'info',
                              `letta` tinyint(1) NOT NULL DEFAULT 0,
                              `data_invio` datetime NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -547,6 +548,7 @@ ALTER TABLE `migrations`
 ALTER TABLE `notifiche`
     ADD PRIMARY KEY (`id`),
   ADD KEY `notifiche_id_utente_foreign` (`id_utente`),
+  ADD KEY `notifiche_id_mittente_foreign` (`id_mittente`),
   ADD KEY `notifiche_id_paziente_foreign` (`id_paziente`),
   ADD KEY `notifiche_id_dispositivo_foreign` (`id_dispositivo`),
   ADD KEY `notifiche_id_assunzione_foreign` (`id_assunzione`);
@@ -756,6 +758,7 @@ ALTER TABLE `medici_pazienti`
 ALTER TABLE `notifiche`
     ADD CONSTRAINT `notifiche_id_assunzione_foreign` FOREIGN KEY (`id_assunzione`) REFERENCES `assunzioni` (`id`) ON DELETE SET NULL,
   ADD CONSTRAINT `notifiche_id_dispositivo_foreign` FOREIGN KEY (`id_dispositivo`) REFERENCES `dispositivi` (`id`) ON DELETE SET NULL,
+  ADD CONSTRAINT `notifiche_id_mittente_foreign` FOREIGN KEY (`id_mittente`) REFERENCES `users` (`id`) ON DELETE SET NULL,
   ADD CONSTRAINT `notifiche_id_paziente_foreign` FOREIGN KEY (`id_paziente`) REFERENCES `pazienti` (`id`) ON DELETE SET NULL,
   ADD CONSTRAINT `notifiche_id_utente_foreign` FOREIGN KEY (`id_utente`) REFERENCES `users` (`id`) ON DELETE CASCADE;
 

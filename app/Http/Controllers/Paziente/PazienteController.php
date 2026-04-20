@@ -14,7 +14,11 @@ class PazienteController extends Controller
     private function getPaziente()
     {
         $paziente = Auth::user()->paziente;
-        if (!$paziente) abort(404, 'Profilo paziente non trovato.');
+
+        if (!$paziente) {
+            abort(404, 'Profilo paziente non trovato.');
+        }
+
         return $paziente;
     }
 
@@ -22,7 +26,7 @@ class PazienteController extends Controller
 
     public function terapie()
     {
-        $utente   = Auth::user();
+        $utente = Auth::user();
         $paziente = $this->getPaziente();
 
         $terapieAttive = $paziente->terapie()
@@ -38,18 +42,24 @@ class PazienteController extends Controller
             ->take(10)
             ->get();
 
-        return view('paziente.terapie', compact('utente','paziente','terapieAttive','terapieConcluse'));
+        return view('paziente.terapie', compact(
+            'utente',
+            'paziente',
+            'terapieAttive',
+            'terapieConcluse'
+        ));
     }
 
     // ── STORICO ASSUNZIONI ─────────────────────────────────────────
 
     public function storico(Request $request)
     {
-        $utente   = Auth::user();
+        $utente = Auth::user();
         $paziente = $this->getPaziente();
 
-        $query = Assunzione::whereHas('somministrazione.terapia', fn($q) =>
-                $q->where('id_paziente', $paziente->id))
+        $query = Assunzione::whereHas('somministrazione.terapia', function ($q) use ($paziente) {
+            $q->where('id_paziente', $paziente->id);
+        })
             ->with(['somministrazione.terapia.farmaco', 'dispositivo']);
 
         // Filtro per stato
@@ -61,6 +71,7 @@ class PazienteController extends Controller
         if ($dal = $request->get('dal')) {
             $query->whereDate('data_prevista', '>=', $dal);
         }
+
         if ($al = $request->get('al')) {
             $query->whereDate('data_prevista', '<=', $al);
         }
@@ -70,38 +81,57 @@ class PazienteController extends Controller
             $query->where('data_prevista', '>=', now()->subDays(30));
         }
 
-        $assunzioni = $query->orderByDesc('data_prevista')->paginate(20)->withQueryString();
+        $assunzioni = $query
+            ->orderByDesc('data_prevista')
+            ->paginate(20)
+            ->withQueryString();
 
         // Statistiche generali
-        $totaleAssunzioni = Assunzione::whereHas('somministrazione.terapia', fn($q) =>
-                $q->where('id_paziente', $paziente->id))->count();
-        $totalePrese = Assunzione::whereHas('somministrazione.terapia', fn($q) =>
-                $q->where('id_paziente', $paziente->id))
-            ->whereIn('stato', ['assunta','erogata'])->count();
-        $totaleForzate = Assunzione::whereHas('somministrazione.terapia', fn($q) =>
-                $q->where('id_paziente', $paziente->id))
-            ->where('apertura_forzata', true)->count();
+        $totaleAssunzioni = Assunzione::whereHas('somministrazione.terapia', function ($q) use ($paziente) {
+            $q->where('id_paziente', $paziente->id);
+        })->count();
+
+        $totalePrese = Assunzione::whereHas('somministrazione.terapia', function ($q) use ($paziente) {
+            $q->where('id_paziente', $paziente->id);
+        })
+            ->whereIn('stato', ['assunta', 'erogata'])
+            ->count();
+
+        $totaleForzate = Assunzione::whereHas('somministrazione.terapia', function ($q) use ($paziente) {
+            $q->where('id_paziente', $paziente->id);
+        })
+            ->where('apertura_forzata', true)
+            ->count();
 
         $stats = [
-            'totale'    => $totaleAssunzioni,
-            'prese'     => $totalePrese,
-            'forzate'   => $totaleForzate,
-            'aderenza'  => $totaleAssunzioni > 0 ? round($totalePrese / $totaleAssunzioni * 100) : 0,
+            'totale'   => $totaleAssunzioni,
+            'prese'    => $totalePrese,
+            'forzate'  => $totaleForzate,
+            'aderenza' => $totaleAssunzioni > 0
+                ? round($totalePrese / $totaleAssunzioni * 100)
+                : 0,
         ];
 
-        return view('paziente.storico', compact('utente','paziente','assunzioni','stats'));
+        return view('paziente.storico', compact(
+            'utente',
+            'paziente',
+            'assunzioni',
+            'stats'
+        ));
     }
 
     // ── DETTAGLIO SINGOLA ASSUNZIONE ───────────────────────────────
 
     public function assunzioneShow(Assunzione $assunzione)
     {
-        $utente   = Auth::user();
+        $utente = Auth::user();
         $paziente = $this->getPaziente();
 
-        // Verifica appartenenza
         $idPaz = $assunzione->somministrazione->terapia->id_paziente ?? null;
-        if ($idPaz !== $paziente->id) abort(403);
+
+        if ($idPaz !== $paziente->id) {
+            abort(403);
+        }
 
         $assunzione->load([
             'somministrazione.terapia.farmaco',
@@ -109,37 +139,45 @@ class PazienteController extends Controller
             'dispositivo',
         ]);
 
-        return view('paziente.assunzione-detail', compact('utente','paziente','assunzione'));
+        return view('paziente.assunzione-detail', compact(
+            'utente',
+            'paziente',
+            'assunzione'
+        ));
     }
 
     // ── DISPOSITIVI ────────────────────────────────────────────────
 
     public function dispositivi()
     {
-        $utente   = Auth::user();
+        $utente = Auth::user();
         $paziente = $this->getPaziente();
 
         $dispositivi = $paziente->dispositivi()
             ->orderByRaw("FIELD(stato,'attivo','offline','errore','manutenzione')")
             ->get();
 
-        return view('paziente.dispositivi', compact('utente','paziente','dispositivi'));
+        return view('paziente.dispositivi', compact(
+            'utente',
+            'paziente',
+            'dispositivi'
+        ));
     }
 
     // ── INVIA MESSAGGIO AL MEDICO ──────────────────────────────────
 
     public function inviaMessaggio(Request $request)
     {
-        $utente   = Auth::user();
+        $utente = Auth::user();
         $paziente = $this->getPaziente();
 
         $request->validate([
-            'titolo'   => ['required', 'string', 'max:100'],
-            'messaggio'=> ['required', 'string'],
+            'titolo' => ['required', 'string', 'max:100'],
+            'messaggio' => ['required', 'string'],
         ]);
 
-        // Invia a tutti i medici del paziente
         $medici = $paziente->medici()->pluck('users.id');
+
         foreach ($medici as $idMedico) {
             DB::table('notifiche')->insert([
                 'id_utente'   => $idMedico,
@@ -156,24 +194,32 @@ class PazienteController extends Controller
         return back()->with('success', '✅ Messaggio inviato al medico.');
     }
 
+    // ── NOTIFICHE ──────────────────────────────────────────────────
+
     public function notifiche()
     {
-        $utente   = Auth::user();
+        $utente = Auth::user();
         $paziente = $this->getPaziente();
 
         $notifiche = DB::table('notifiche')
             ->where('id_utente', $utente->id)
-            ->orderByDesc('created_at')
+            ->orderByDesc('data_invio')
             ->paginate(20);
 
-        // Segna come lette
         DB::table('notifiche')
             ->where('id_utente', $utente->id)
             ->where('letta', false)
-            ->update(['letta' => true]);
+            ->update([
+                'letta' => true
+            ]);
 
-        $nonLette = 0; // già azzerate
+        $nonLette = 0;
 
-        return view('paziente.notifiche', compact('utente','paziente','notifiche','nonLette'));
+        return view('paziente.notifiche', compact(
+            'utente',
+            'paziente',
+            'notifiche',
+            'nonLette'
+        ));
     }
 }

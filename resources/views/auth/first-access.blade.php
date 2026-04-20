@@ -1,5 +1,5 @@
 {{-- resources/views/auth/first-access.blade.php --}}
-    <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="it">
 <head>
     <meta charset="UTF-8"/>
@@ -8,15 +8,16 @@
     <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
     <style>
         :root {
-            --bg:      #0b0f1a;
-            --surface: #111827;
-            --border:  #1f2d45;
-            --accent:  #3b82f6;
-            --accent2: #06b6d4;
-            --green:   #10b981;
-            --red:     #ef4444;
-            --text:    #e2e8f0;
+            --bg:      #f0f7ff;
+            --surface: #ffffff;
+            --border:  #dde8f5;
+            --accent:  #2563eb;
+            --accent2: #0891b2;
+            --green:   #059669;
+            --red:     #dc2626;
+            --text:    #1e293b;
             --muted:   #64748b;
+            --shadow:  0 2px 16px rgba(37,99,235,.10);
         }
 
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -38,20 +39,20 @@
             justify-content: center;
             padding: 60px;
             overflow: hidden;
-            background: var(--surface);
-            border-right: 1px solid var(--border);
+            background: linear-gradient(145deg, #059669 0%, #0891b2 100%);
+            color: #fff;
         }
 
         .orb {
             position: absolute;
             border-radius: 50%;
-            filter: blur(80px);
-            opacity: .22;
+            filter: blur(70px);
+            opacity: .18;
             animation: drift 8s ease-in-out infinite alternate;
         }
-        .orb-1 { width: 360px; height: 360px; background: var(--accent);  top: -60px;  left: -60px; }
-        .orb-2 { width: 280px; height: 280px; background: var(--green);   bottom: 60px; right: -40px; animation-delay: 2s; }
-        .orb-3 { width: 180px; height: 180px; background: var(--accent2); bottom: 200px; left: 100px; animation-delay: 4s; }
+        .orb-1 { width: 360px; height: 360px; background: #fff; top: -80px; left: -80px; }
+        .orb-2 { width: 280px; height: 280px; background: #a7f3d0; bottom: 40px; right: -60px; animation-delay: 2s; }
+        .orb-3 { width: 180px; height: 180px; background: #67e8f9; bottom: 200px; left: 80px; animation-delay: 4s; }
 
         @keyframes drift {
             from { transform: translate(0,0) scale(1); }
@@ -63,51 +64,48 @@
         .brand {
             display: flex;
             align-items: center;
-            gap: 14px;
-            margin-bottom: 52px;
+            gap: 12px;
+            margin-bottom: 48px;
         }
-
+        .brand-icon {
+            width: 44px; height: 44px;
+            background: rgba(255,255,255,.2);
+            border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 22px;
+        }
         .brand-name {
             font-family: 'Syne', sans-serif;
-            font-size: 26px;
+            font-size: 24px;
             font-weight: 800;
-            background: linear-gradient(135deg, #fff, var(--accent2));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+            color: #fff;
         }
 
         .left h1 {
             font-family: 'Syne', sans-serif;
-            font-size: 36px;
+            font-size: 34px;
             font-weight: 800;
-            line-height: 1.2;
-            margin-bottom: 18px;
-        }
-
-        .left h1 span {
-            background: linear-gradient(90deg, var(--accent), var(--accent2));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+            line-height: 1.25;
+            margin-bottom: 16px;
         }
 
         .left p {
             font-size: 15px;
-            color: var(--muted);
+            color: rgba(255,255,255,.8);
             line-height: 1.7;
             max-width: 360px;
-            margin-bottom: 44px;
+            margin-bottom: 40px;
         }
 
-        /* Info list */
-        .info-list { display: flex; flex-direction: column; gap: 14px; }
+        .info-list { display: flex; flex-direction: column; gap: 12px; }
 
         .info-item {
             display: flex;
             align-items: flex-start;
             gap: 14px;
-            padding: 14px 18px;
-            background: rgba(255,255,255,.04);
-            border: 1px solid var(--border);
+            padding: 14px 16px;
+            background: rgba(255,255,255,.12);
+            border: 1px solid rgba(255,255,255,.2);
             border-radius: 12px;
             backdrop-filter: blur(8px);
             animation: fadeUp .5s ease both;
@@ -119,17 +117,15 @@
         .info-icon {
             width: 34px; height: 34px;
             border-radius: 9px;
+            background: rgba(255,255,255,.2);
             display: flex; align-items: center; justify-content: center;
             font-size: 16px;
             flex-shrink: 0;
             margin-top: 1px;
         }
-        .info-icon.blue  { background: rgba(59,130,246,.15); }
-        .info-icon.green { background: rgba(16,185,129,.15); }
-        .info-icon.cyan  { background: rgba(6,182,212,.15); }
 
-        .info-text strong { display: block; font-weight: 500; font-size: 13px; margin-bottom: 2px; }
-        .info-text span   { color: var(--muted); font-size: 12px; line-height: 1.5; }
+        .info-text strong { display: block; font-weight: 600; font-size: 13px; margin-bottom: 2px; color: #fff; }
+        .info-text span   { color: rgba(255,255,255,.7); font-size: 12px; line-height: 1.5; }
 
         /* ── Right panel ─────────────────────────────── */
         .right {
@@ -137,6 +133,7 @@
             align-items: center;
             justify-content: center;
             padding: 60px 48px;
+            background: var(--bg);
         }
 
         .form-box {
@@ -149,50 +146,38 @@
             font-family: 'Syne', sans-serif;
             font-size: 26px;
             font-weight: 700;
-            margin-bottom: 40px;
+            margin-bottom: 8px;
+            color: var(--text);
         }
 
         .form-box .subtitle {
             color: var(--muted);
             font-size: 14px;
-            margin-bottom: 32px;
+            margin-bottom: 30px;
         }
 
-        /* Alerts */
         .alert {
             border-radius: 10px;
             padding: 12px 14px;
-            margin-bottom: 24px;
+            margin-bottom: 20px;
             font-size: 13px;
         }
         .alert-error {
-            background: rgba(239,68,68,.1);
-            border: 1px solid rgba(239,68,68,.3);
-            color: #fca5a5;
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            color: #b91c1c;
             animation: shake .35s ease;
         }
         .alert-success {
-            background: rgba(16,185,129,.1);
-            border: 1px solid rgba(16,185,129,.3);
-            color: #6ee7b7;
+            background: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            color: #15803d;
         }
 
         @keyframes shake {
             0%,100% { transform: translateX(0); }
-            25%      { transform: translateX(-5px); }
-            75%      { transform: translateX(5px); }
-        }
-
-        /* Fields */
-        .section-sep {
-            font-size: 11px;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            color: var(--muted);
-            border-bottom: 1px solid var(--border);
-            padding-bottom: 8px;
-            margin: 0 0 20px;
+            25%      { transform: translateX(-4px); }
+            75%      { transform: translateX(4px); }
         }
 
         .field { margin-bottom: 18px; }
@@ -202,47 +187,37 @@
             font-size: 12px;
             font-weight: 600;
             text-transform: uppercase;
-            letter-spacing: .8px;
+            letter-spacing: .7px;
             color: var(--muted);
             margin-bottom: 7px;
         }
 
         .input-wrap { position: relative; }
 
-        .input-wrap .ico {
-            position: absolute;
-            left: 12px;
-            top: 50%;
-            transform: translateY(-50%);
-            font-size: 15px;
-            pointer-events: none;
-            opacity: .45;
-        }
-
         .input-wrap input {
             width: 100%;
             background: var(--surface);
-            border: 1px solid var(--border);
+            border: 1.5px solid var(--border);
             border-radius: 10px;
-            padding: 11px 12px 11px 38px;
+            padding: 12px 14px;
             color: var(--text);
             font-family: 'DM Sans', sans-serif;
             font-size: 14px;
             outline: none;
             transition: border-color .2s, box-shadow .2s;
+            box-shadow: var(--shadow);
         }
 
         .input-wrap input:focus {
             border-color: var(--accent);
-            box-shadow: 0 0 0 3px rgba(59,130,246,.15);
+            box-shadow: 0 0 0 3px rgba(37,99,235,.12);
         }
 
         .input-wrap input.is-invalid {
             border-color: var(--red);
-            box-shadow: 0 0 0 3px rgba(239,68,68,.1);
         }
 
-        .input-wrap input::placeholder { color: var(--muted); }
+        .input-wrap input::placeholder { color: #cbd5e1; }
 
         .toggle-pw {
             position: absolute;
@@ -280,11 +255,10 @@
             transition: width .3s, background .3s;
         }
 
-        /* Submit */
         .btn-submit {
             width: 100%;
             padding: 13px;
-            background: linear-gradient(135deg, var(--accent), var(--accent2));
+            background: linear-gradient(135deg, #059669, var(--accent2));
             border: none;
             border-radius: 10px;
             color: #fff;
@@ -293,11 +267,11 @@
             font-weight: 700;
             cursor: pointer;
             transition: opacity .2s, transform .15s, box-shadow .2s;
-            box-shadow: 0 4px 20px rgba(59,130,246,.35);
+            box-shadow: 0 4px 16px rgba(5,150,105,.3);
             margin-top: 8px;
             letter-spacing: .3px;
         }
-        .btn-submit:hover  { opacity: .9; transform: translateY(-1px); box-shadow: 0 6px 28px rgba(59,130,246,.45); }
+        .btn-submit:hover  { opacity: .92; transform: translateY(-1px); }
         .btn-submit:active { transform: translateY(0); }
 
         .back-link {
@@ -335,29 +309,30 @@
 
     <div class="left-content">
         <div class="brand">
+            <div class="brand-icon">💊</div>
             <span class="brand-name">PillMate</span>
         </div>
 
-        <h1>Benvenuto su<br><span>PillMate</span></h1>
-        <p>Il tuo account è stato creato da un amministratore. Per completare l'accesso, scegli una nuova password personale.</p>
+        <h1>Benvenuto<br>su PillMate!</h1>
+        <p>Il tuo account è stato creato dal tuo medico. Imposta la tua password personale per completare la registrazione.</p>
 
         <div class="info-list">
             <div class="info-item">
-                <div class="info-icon blue">🔒</div>
+                <div class="info-icon">🔒</div>
                 <div class="info-text">
                     <strong>Password sicura</strong>
                     <span>Usa almeno 8 caratteri, con lettere e numeri</span>
                 </div>
             </div>
             <div class="info-item">
-                <div class="info-icon green">✅</div>
+                <div class="info-icon">✅</div>
                 <div class="info-text">
                     <strong>Accesso immediato</strong>
-                    <span>Dopo il salvataggio potrai accedere subito alla dashboard</span>
+                    <span>Dopo il salvataggio potrai accedere alla tua dashboard</span>
                 </div>
             </div>
             <div class="info-item">
-                <div class="info-icon cyan">🛡️</div>
+                <div class="info-icon">🛡️</div>
                 <div class="info-text">
                     <strong>Dati protetti</strong>
                     <span>La tua password è cifrata e non visibile a nessuno</span>
@@ -370,7 +345,8 @@
 {{-- ═══ RIGHT PANEL ═══ --}}
 <div class="right">
     <div class="form-box">
-        <h2>Imposta la password</h2>
+        <h2>Imposta la password 🔑</h2>
+        <p class="subtitle">Inserisci la tua email e scegli una password sicura</p>
 
         @if (session('success'))
             <div class="alert alert-success">{{ session('success') }}</div>
@@ -387,17 +363,15 @@
         <form method="POST" action="{{ route('first-access.store') }}">
             @csrf
 
-
-            {{-- Email --}}
             <div class="field">
-                <label for="email">Email</label>
+                <label for="email">La tua Email</label>
                 <div class="input-wrap">
                     <input
                         type="email"
                         id="email"
                         name="email"
-                        placeholder="la-tua@email.com"
-                        value="{{ old('email') }}"
+                        placeholder="mario.rossi@email.it"
+                        value="{{ old('email', Auth::user()->email) }}"
                         autocomplete="email"
                         class="{{ $errors->has('email') ? 'is-invalid' : '' }}"
                         required
@@ -406,8 +380,6 @@
                 @error('email') <div class="field-error">{{ $message }}</div> @enderror
             </div>
 
-
-            {{-- Nuova password --}}
             <div class="field">
                 <label for="password">Nuova password</label>
                 <div class="input-wrap">
@@ -416,6 +388,7 @@
                         id="password"
                         name="password"
                         autocomplete="new-password"
+                        placeholder="Almeno 8 caratteri"
                         class="{{ $errors->has('password') ? 'is-invalid' : '' }}"
                         oninput="checkStrength(this.value)"
                         required
@@ -426,7 +399,6 @@
                 @error('password') <div class="field-error">{{ $message }}</div> @enderror
             </div>
 
-            {{-- Conferma password --}}
             <div class="field">
                 <label for="password_confirmation">Conferma password</label>
                 <div class="input-wrap">
@@ -435,13 +407,14 @@
                         id="password_confirmation"
                         name="password_confirmation"
                         autocomplete="new-password"
+                        placeholder="Ripeti la password"
                         required
                     />
                     <button type="button" class="toggle-pw" onclick="togglePw('password_confirmation','btn2')" id="btn2">👁</button>
                 </div>
             </div>
 
-            <button type="submit" class="btn-submit">Salva e accedi</button>
+            <button type="submit" class="btn-submit">Salva e accedi →</button>
         </form>
 
         <div class="back-link">
@@ -454,13 +427,8 @@
     function togglePw(inputId, btnId) {
         const input = document.getElementById(inputId);
         const btn   = document.getElementById(btnId);
-        if (input.type === 'password') {
-            input.type = 'text';
-            btn.textContent = '🙈';
-        } else {
-            input.type = 'password';
-            btn.textContent = '👁';
-        }
+        input.type  = input.type === 'password' ? 'text' : 'password';
+        btn.textContent = input.type === 'password' ? '👁' : '🙈';
     }
 
     function checkStrength(value) {

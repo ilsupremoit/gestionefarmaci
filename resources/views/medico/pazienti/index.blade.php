@@ -8,15 +8,15 @@
     <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
     <style>
         :root {
-            --bg:      #0b0f1a;
-            --surface: #111827;
-            --border:  #1f2d45;
-            --accent:  #3b82f6;
-            --accent2: #06b6d4;
-            --green:   #10b981;
-            --red:     #ef4444;
-            --yellow:  #f59e0b;
-            --text:    #e2e8f0;
+            --bg:      #f0f7ff;
+            --surface: #ffffff;
+            --border:  #dde8f5;
+            --accent:  #2563eb;
+            --accent2: #0891b2;
+            --green:   #059669;
+            --red:     #dc2626;
+            --yellow:  #d97706;
+            --text:    #1e293b;
             --muted:   #64748b;
         }
 
@@ -28,15 +28,16 @@
             width: 240px; flex-shrink: 0;
             background: var(--surface);
             border-right: 1px solid var(--border);
+            box-shadow: 2px 0 12px rgba(0,0,0,.04);
             display: flex; flex-direction: column;
             padding: 28px 0;
             position: fixed; top: 0; left: 0; height: 100vh;
         }
-        .brand { padding: 0 24px 28px; border-bottom: 1px solid var(--border); margin-bottom: 20px; }
+        .brand { display: flex; align-items: center; gap: 10px; padding: 0 24px 24px; border-bottom: 1px solid var(--border); margin-bottom: 20px; }
+        .brand-icon { width: 36px; height: 36px; background: linear-gradient(135deg, var(--accent), var(--accent2)); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 17px; }
         .brand-name {
-            font-family: 'Syne', sans-serif; font-size: 20px; font-weight: 800;
-            background: linear-gradient(135deg, #fff, var(--accent2));
-            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            font-family: 'Syne', sans-serif; font-size: 19px; font-weight: 800;
+            color: var(--text);
         }
         .nav-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); padding: 0 24px; margin-bottom: 8px; }
         .nav-item {
@@ -44,25 +45,25 @@
             padding: 10px 24px; font-size: 14px; color: var(--muted);
             text-decoration: none; transition: all .2s;
         }
-        .nav-item:hover { color: var(--text); background: rgba(255,255,255,.04); }
-        .nav-item.active { color: var(--accent); background: rgba(59,130,246,.08); border-right: 2px solid var(--accent); }
+        .nav-item:hover { color: var(--text); background: #f1f5f9; }
+        .nav-item.active { color: var(--accent); background: #eff6ff; border-right: 3px solid var(--accent); font-weight: 600; }
         .sidebar-footer { margin-top: auto; padding: 20px 24px 0; border-top: 1px solid var(--border); }
         .user-info { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
         .avatar {
             width: 36px; height: 36px; border-radius: 50%;
             background: linear-gradient(135deg, var(--accent), var(--accent2));
             display: flex; align-items: center; justify-content: center;
-            font-size: 14px; font-weight: 700; flex-shrink: 0;
+            font-size: 14px; font-weight: 700; color: #fff; flex-shrink: 0;
         }
-        .user-name { font-size: 13px; font-weight: 600; }
+        .user-name { font-size: 13px; font-weight: 600; color: var(--text); }
         .user-role { font-size: 11px; color: var(--muted); }
         .btn-logout {
             width: 100%; padding: 9px;
-            background: rgba(239,68,68,.1); border: 1px solid rgba(239,68,68,.2);
-            border-radius: 8px; color: #fca5a5; font-size: 13px;
-            cursor: pointer; transition: all .2s; font-family: inherit;
+            background: #fef2f2; border: 1px solid #fecaca;
+            border-radius: 8px; color: #b91c1c; font-size: 13px;
+            cursor: pointer; transition: all .2s; font-family: inherit; font-weight: 600;
         }
-        .btn-logout:hover { background: rgba(239,68,68,.2); }
+        .btn-logout:hover { background: #fee2e2; }
 
         /* ── Main ── */
         .main { margin-left: 240px; flex: 1; padding: 36px 40px; }
@@ -89,9 +90,9 @@
 
         /* ── Alert ── */
         .alert-success {
-            background: rgba(16,185,129,.1); border: 1px solid rgba(16,185,129,.3);
+            background: #f0fdf4; border: 1px solid #bbf7d0;
             border-radius: 10px; padding: 12px 16px; margin-bottom: 24px;
-            font-size: 13px; color: #6ee7b7;
+            font-size: 13px; color: #15803d;
         }
 
         /* ── Search + stats bar ── */
