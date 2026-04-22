@@ -68,7 +68,7 @@ class MedicoPazienteDetailController extends Controller
 
         $topic = "pillmate/{$dispositivo->codice_seriale}/comandi";
         $payload = json_encode([
-            'azione'    => 'eroga_ora',
+            'comando'   => 'eroga_farmaco',   // Firmware legge "comando", non "azione"
             'forzata'   => true,
             'medico_id' => Auth::id(),
             'timestamp' => now()->toDateTimeString(),
@@ -112,7 +112,7 @@ class MedicoPazienteDetailController extends Controller
 
         $topic = "pillmate/{$dispositivo->codice_seriale}/comandi";
         $payload = json_encode([
-            'azione'    => $azione,
+            'comando'   => $azione,           // Firmware legge "comando", non "azione"
             'medico_id' => Auth::id(),
             'timestamp' => now()->toDateTimeString(),
         ]);

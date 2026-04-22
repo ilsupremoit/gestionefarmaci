@@ -8,8 +8,9 @@ class DispenserController extends Controller
 {
     public function inviaComando()
     {
+        // Nota: il firmware legge "comando" non "azione"
         MQTT::publish('pillmate/disp_01/comandi', json_encode([
-            'azione' => 'eroga_ora',
+            'comando'   => 'eroga_farmaco',
             'timestamp' => now()->toDateTimeString(),
         ]));
 

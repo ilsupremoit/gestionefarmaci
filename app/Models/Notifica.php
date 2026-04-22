@@ -12,6 +12,10 @@ class Notifica extends Model
 
     protected $fillable = [
         'id_utente',
+        'id_mittente',
+        'id_paziente',
+        'id_dispositivo',
+        'id_assunzione',
         'titolo',
         'messaggio',
         'tipo',
@@ -19,10 +23,28 @@ class Notifica extends Model
         'data_invio',
     ];
 
-    protected $casts = ['letta' => 'boolean'];
+    protected $casts = [
+        'letta'      => 'boolean',
+        'data_invio' => 'datetime',
+    ];
 
+    // ── Relazioni ─────────────────────────────────────────────────
+
+    /** Destinatario della notifica */
     public function utente(): BelongsTo
     {
-        return $this->belongsTo(Utente::class, 'id_utente');
+        return $this->belongsTo(User::class, 'id_utente');
+    }
+
+    /** Chi ha inviato la notifica (medico o sistema) */
+    public function mittente(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'id_mittente');
+    }
+
+    /** Paziente collegato (se presente) */
+    public function paziente(): BelongsTo
+    {
+        return $this->belongsTo(Paziente::class, 'id_paziente');
     }
 }

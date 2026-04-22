@@ -12,6 +12,7 @@ class FirstAccessController extends Controller
 {
     public function show()
     {
+        // Se la password è già stata cambiata, vai direttamente alla dashboard
         if (!auth()->user()->must_change_password) {
             return redirect()->route(auth()->user()->ruolo . '.dashboard');
         }
@@ -24,6 +25,12 @@ class FirstAccessController extends Controller
         $request->validate([
             'email'    => ['required', 'email', 'max:100', Rule::unique('users', 'email')->ignore(Auth::id())],
             'password' => ['required', 'confirmed', Password::min(8)],
+        ], [
+            'email.required'         => 'L\'indirizzo email è obbligatorio.',
+            'email.unique'           => 'Questa email è già in uso da un altro account.',
+            'password.required'      => 'La password è obbligatoria.',
+            'password.confirmed'     => 'Le due password non coincidono.',
+            'password.min'           => 'La password deve avere almeno 8 caratteri.',
         ]);
 
         $user = Auth::user();
@@ -31,13 +38,11 @@ class FirstAccessController extends Controller
         $user->email                = $request->email;
         $user->password             = Hash::make($request->password);
         $user->must_change_password = false;
-        $user->email_verified_at = null;
         $user->save();
 
-        $user->sendEmailVerificationNotification();
-
+        // Redirect diretto alla dashboard del ruolo — nessuna verifica email obbligatoria
         return redirect()
-            ->route('verification.notice')
-            ->with('success', 'Abbiamo inviato la mail di verifica.');
+            ->route($user->ruolo . '.dashboard')
+            ->with('success', '✅ Password impostata con successo! Benvenuto su PillMate.');
     }
 }

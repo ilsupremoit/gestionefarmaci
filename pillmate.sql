@@ -789,6 +789,42 @@ ALTER TABLE `terapie`
   ADD CONSTRAINT `terapie_id_paziente_foreign` FOREIGN KEY (`id_paziente`) REFERENCES `pazienti` (`id`) ON DELETE CASCADE;
 COMMIT;
 
+-- ============================================================
+-- MIGRAZIONI AGGIUNTIVE — eseguire dopo l'import base
+-- ============================================================
+
+-- 1. Aggiunge id_mittente alla tabella notifiche
+ALTER TABLE `notifiche`
+    ADD COLUMN `id_mittente` BIGINT(20) UNSIGNED NULL AFTER `id_utente`;
+ALTER TABLE `notifiche`
+    ADD CONSTRAINT `notifiche_id_mittente_foreign`
+    FOREIGN KEY (`id_mittente`) REFERENCES `users`(`id`) ON DELETE SET NULL;
+
+-- 2. Aggiunge tipo 'messaggio' all'ENUM di notifiche
+ALTER TABLE `notifiche`
+    MODIFY `tipo` ENUM('promemoria','allarme','errore','info','messaggio') NOT NULL DEFAULT 'info';
+
+-- 3. Aggiunge codice_fiscale alla tabella pazienti
+ALTER TABLE `pazienti`
+    ADD COLUMN `codice_fiscale` VARCHAR(16) NULL UNIQUE AFTER `indirizzo`;
+
+-- 4. Crea tabella scomparti_dispositivo (usata dal modello ScompartoDispositivo)
+CREATE TABLE IF NOT EXISTS `scomparti_dispositivo` (
+    `id`               BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+    `id_dispositivo`   BIGINT(20) UNSIGNED NOT NULL,
+    `numero_scomparto` INT(11)    NOT NULL,
+    `angolo`           INT(11)    NOT NULL DEFAULT 0,
+    `id_farmaco`       BIGINT(20) UNSIGNED NULL,
+    `pieno`            TINYINT(1) NOT NULL DEFAULT 0,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `scomp_disp_numero_unique` (`id_dispositivo`,`numero_scomparto`),
+    KEY `scomp_id_farmaco_fk` (`id_farmaco`),
+    CONSTRAINT `scomp_id_dispositivo_foreign`
+        FOREIGN KEY (`id_dispositivo`) REFERENCES `dispositivi`(`id`) ON DELETE CASCADE,
+    CONSTRAINT `scomp_id_farmaco_foreign`
+        FOREIGN KEY (`id_farmaco`)     REFERENCES `farmaci`(`id`)     ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Medico;
 use App\Http\Controllers\Controller;
 use App\Models\Dispositivo;
 use App\Models\Paziente;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -12,28 +13,36 @@ use PhpMqtt\Client\Facades\MQTT;
 
 class MedicoController extends Controller
 {
-    // ── NOTIFICHE / MESSAGGI ────────────────────────────────────────
+    // ── NOTIFICHE / MESSAGGI ──────────────────────────────────────
 
     public function notifiche()
     {
         $medico = Auth::user();
 
-        // Messaggi inviati dal medico
+        // Tutti i destinatari possibili
+        $pazienti  = $medico->pazientiSeguiti()->with('utente')->get();
+        $medici    = User::where('ruolo', 'medico')->where('id', '!=', $medico->id)->orderBy('cognome')->get();
+        $adminList = User::where('ruolo', 'admin')->orderBy('cognome')->get();
+
+        // Messaggi inviati
         $inviati = DB::table('notifiche')
             ->where('id_mittente', $medico->id)
             ->orderByDesc('data_invio')
-            ->paginate(20, ['*'], 'inviati');
+            ->paginate(15, ['*'], 'inviati');
 
-        // Messaggi ricevuti dal medico
+        // Messaggi ricevuti
         $ricevuti = DB::table('notifiche')
             ->where('id_utente', $medico->id)
             ->orderByDesc('data_invio')
-            ->paginate(20, ['*'], 'ricevuti');
+            ->paginate(15, ['*'], 'ricevuti');
 
-        // Pazienti del medico per il form invio
-        $pazienti = $medico->pazientiSeguiti()->with('utente')->get();
+        // Segna come letti
+        DB::table('notifiche')
+            ->where('id_utente', $medico->id)
+            ->where('letta', false)
+            ->update(['letta' => true, 'letto_at' => now()]);
 
-        return view('medico.notifiche', compact('medico', 'inviati', 'ricevuti', 'pazienti'));
+        return view('medico.notifiche', compact('medico', 'inviati', 'ricevuti', 'pazienti', 'medici', 'adminList'));
     }
 
     public function inviaNotifica(Request $request)
@@ -45,6 +54,11 @@ class MedicoController extends Controller
             'tipo'       => ['required', 'in:info,promemoria,allarme,messaggio'],
         ]);
 
+        $dest = User::findOrFail($request->id_utente);
+        if ($dest->id === Auth::id()) {
+            return back()->with('error', '❌ Non puoi inviare un messaggio a te stesso.');
+        }
+
         DB::table('notifiche')->insert([
             'id_utente'   => $request->id_utente,
             'id_mittente' => Auth::id(),
@@ -55,10 +69,10 @@ class MedicoController extends Controller
             'data_invio'  => now(),
         ]);
 
-        return back()->with('success', '✅ Messaggio inviato con successo.');
+        return back()->with('success', "✅ Messaggio inviato a {$dest->nome} {$dest->cognome}.");
     }
 
-    // ── DISPOSITIVI ─────────────────────────────────────────────────
+    // ── DISPOSITIVI ───────────────────────────────────────────────
 
     public function dispositivoShow(Paziente $paziente, Dispositivo $dispositivo)
     {
@@ -115,33 +129,62 @@ class MedicoController extends Controller
         return back()->with('success', '📡 Dispositivo aggiunto. Appena si connette al broker MQTT apparirà online.');
     }
 
+    /**
+     * Invia un comando MQTT all'ESP32.
+     *
+     * IMPORTANTE: il firmware C++ legge il campo "comando" (non "azione").
+     * Comandi supportati: eroga_farmaco, attiva_allarme, disattiva_allarme,
+     *                     set_sveglia, get_mappa_scomparti, buzzer_test
+     */
     public function dispositivoComando(Request $request, Paziente $paziente, Dispositivo $dispositivo)
     {
         $this->autorizzaPaziente($paziente);
         abort_if($dispositivo->id_paziente !== $paziente->id, 403);
 
         $request->validate([
-            'azione' => ['required', 'in:eroga_ora,attiva_allarme,disattiva_allarme,imposta_sveglia,reset'],
+            'azione'        => ['required', 'in:eroga_farmaco,attiva_allarme,disattiva_allarme,set_sveglia,get_mappa_scomparti,buzzer_test,reset'],
             'payload_extra' => ['nullable', 'array'],
         ]);
 
         $azione = $request->input('azione');
-        $topic  = "pillmate/{$dispositivo->codice_seriale}/comandi";
+        $topic  = $dispositivo->topicComandi();
 
-        $payload = array_merge([
-            'azione'    => $azione,
+        // Il firmware C++ usa la chiave "comando" — non "azione"
+        $payload = [
+            'comando'   => $azione,
             'medico_id' => Auth::id(),
             'timestamp' => now()->toDateTimeString(),
-        ], $request->input('payload_extra', []));
+        ];
+
+        // Gestione speciale sveglia: il firmware si aspetta "ora" (int) e "minuto" (int)
+        if ($azione === 'set_sveglia') {
+            $oraRaw = $request->input('payload_extra.ora', '08:00');
+
+            if (str_contains($oraRaw, ':')) {
+                [$h, $m] = explode(':', $oraRaw);
+                $payload['ora']    = (int) $h;
+                $payload['minuto'] = (int) $m;
+            } else {
+                $payload['ora']    = (int) $oraRaw;
+                $payload['minuto'] = (int) ($request->input('payload_extra.minuto', 0));
+            }
+        } else {
+            // Merge degli altri campi extra (es. id_farmaco per eroga_farmaco/attiva_allarme)
+            $extra = $request->input('payload_extra', []);
+            if (!empty($extra)) {
+                $payload = array_merge($payload, $extra);
+            }
+        }
 
         try {
             MQTT::publish($topic, json_encode($payload));
 
-            // Aggiorna DB locale
+            // Aggiorna DB locale in base all'azione
             if ($azione === 'attiva_allarme')    $dispositivo->update(['allarme_attivo' => true]);
             if ($azione === 'disattiva_allarme') $dispositivo->update(['allarme_attivo' => false]);
-            if ($azione === 'imposta_sveglia' && isset($payload['ora'])) {
-                $dispositivo->update(['sveglia_impostata' => $payload['ora']]);
+            if ($azione === 'set_sveglia') {
+                $sveglia = sprintf('%02d:%02d:00', $payload['ora'], $payload['minuto']);
+                $dispositivo->update(['sveglia_impostata' => $sveglia]);
             }
 
             DB::table('eventi_dispositivo')->insert([
@@ -150,7 +193,7 @@ class MedicoController extends Controller
                 'topic'              => $topic,
                 'azione'             => $azione,
                 'metodo_attivazione' => 'medico_web',
-                'severita'           => in_array($azione, ['attiva_allarme','eroga_ora']) ? 'warning' : 'info',
+                'severita'           => in_array($azione, ['attiva_allarme', 'eroga_farmaco']) ? 'warning' : 'info',
                 'messaggio'          => "Comando '{$azione}' inviato dal Dr. " . Auth::user()->cognome,
                 'payload_json'       => json_encode($payload),
                 'created_at'         => now(),
@@ -174,18 +217,18 @@ class MedicoController extends Controller
             && \Carbon\Carbon::parse($dispositivo->ultimo_payload_at)->diffInMinutes(now()) <= 5;
 
         return response()->json([
-            'temperatura'      => $dispositivo->temperatura,
-            'umidita'          => $dispositivo->umidita,
-            'wifi_rssi'        => $dispositivo->wifi_rssi,
-            'scomparto_attuale'=> $dispositivo->scomparto_attuale,
-            'sveglia_impostata'=> $dispositivo->sveglia_impostata,
-            'allarme_attivo'   => (bool) $dispositivo->allarme_attivo,
-            'online'           => $online,
-            'last_update'      => $dispositivo->ultimo_payload_at,
+            'temperatura'       => $dispositivo->temperatura,
+            'umidita'           => $dispositivo->umidita,
+            'wifi_rssi'         => $dispositivo->wifi_rssi,
+            'scomparto_attuale' => $dispositivo->scomparto_attuale,
+            'sveglia_impostata' => $dispositivo->sveglia_impostata,
+            'allarme_attivo'    => (bool) $dispositivo->allarme_attivo,
+            'online'            => $online,
+            'last_update'       => $dispositivo->ultimo_payload_at,
         ]);
     }
 
-    // ── Helpers ─────────────────────────────────────────────────────
+    // ── Helpers ───────────────────────────────────────────────────
 
     private function autorizzaPaziente(Paziente $paziente): void
     {

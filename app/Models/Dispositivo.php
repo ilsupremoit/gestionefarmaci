@@ -8,13 +8,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Dispositivo extends Model
 {
-    protected $casts = [
-        'ultima_connessione' => 'datetime', //
-        'allarme_attivo'     => 'boolean',
-        'temperatura'        => 'float',
-        'umidita'            => 'float',
-    ];
-    protected $table  = 'dispositivi';
+    protected $table   = 'dispositivi';
     public $timestamps = false;
 
     protected $fillable = [
@@ -26,11 +20,22 @@ class Dispositivo extends Model
         'batteria',
         'temperatura',
         'umidita',
+        'wifi_rssi',
+        'allarme_attivo',
+        'scomparto_attuale',
+        'sveglia_impostata',
+        'ultimo_payload_at',
     ];
 
+    protected $casts = [
+        'ultima_connessione' => 'datetime',
+        'ultimo_payload_at'  => 'datetime',
+        'allarme_attivo'     => 'boolean',
+        'temperatura'        => 'float',
+        'umidita'            => 'float',
+    ];
 
-
-    // â”€â”€ Relazioni â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Relazioni ─────────────────────────────────────────────────
 
     public function paziente(): BelongsTo
     {
@@ -43,7 +48,7 @@ class Dispositivo extends Model
                     ->orderBy('numero_scomparto');
     }
 
-    // â”€â”€ Topic MQTT â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Topic MQTT ────────────────────────────────────────────────
 
     public function topicComandi(): string
     {
