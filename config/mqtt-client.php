@@ -48,8 +48,8 @@ return [
                     'password' => env('MQTT_AUTH_PASSWORD'),
                 ],
 
-                'connect_timeout' => env('MQTT_CONNECT_TIMEOUT', 60),
-                'socket_timeout' => env('MQTT_SOCKET_TIMEOUT', 5),
+                'connect_timeout' => env('MQTT_CONNECT_TIMEOUT', 3),
+                'socket_timeout' => env('MQTT_SOCKET_TIMEOUT', 3),
                 'resend_timeout' => env('MQTT_RESEND_TIMEOUT', 10),
                 'keep_alive_interval' => env('MQTT_KEEP_ALIVE_INTERVAL', 10),
             ],

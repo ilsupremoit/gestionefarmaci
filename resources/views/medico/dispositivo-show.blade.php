@@ -341,7 +341,7 @@
                 </button>
             </div>
         </div>
-        <div style="font-size:12px;color:var(--muted);margin-bottom:16px;">Assegna un farmaco ad ogni scomparto. Il firmware ESP32 userà queste info per sapere dove si trova ogni pillola.</div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:16px;">Assegna un farmaco e la quantità pillole ad ogni scomparto. Il firmware ESP32 riceve la quantità e la decrementa ad ogni erogazione.</div>
 
         {{-- Griglia 8 scomparti --}}
         <div class="scomparti-grid" id="scompartiGrid">
@@ -352,7 +352,7 @@
                 @if($s['nome_farmaco'])
                     <div class="scomp-farmaco">{{ $s['nome_farmaco'] }}</div>
                     @if($s['dose_farmaco'])<div class="scomp-dose">{{ $s['dose_farmaco'] }}</div>@endif
-                    <span class="scomp-stato {{ $s['pieno'] ? 'pieno' : 'vuoto' }}">{{ $s['pieno'] ? '● Pieno' : '○ Vuoto' }}</span>
+                    <span class="scomp-stato {{ ($s['quantita'] ?? 0) > 0 ? 'pieno' : 'vuoto' }}">{{ ($s['quantita'] ?? 0) > 0 ? '● x'.$s['quantita'] : '○ Vuoto' }}</span>
                     @if($s['terapia_info'])<div class="scomp-terapia" title="{{ $s['terapia_info'] }}">📋 {{ Str::limit($s['terapia_info'], 30) }}</div>@endif
                 @else
                     <div style="font-size:12px;color:var(--muted);margin:8px 0;">— Vuoto —</div>
@@ -393,11 +393,8 @@
             @endforeach
         </select>
 
-        <label class="modale-label">Stato scomparto</label>
-        <select id="editorPieno" class="modale-select">
-            <option value="1">● Pieno (farmaco presente)</option>
-            <option value="0">○ Vuoto</option>
-        </select>
+        <label class="modale-label">Quantità pillole nello scomparto</label>
+        <input type="number" id="editorQuantita" min="0" class="modale-select" placeholder="0" />
 
         <div class="modale-row">
             <button class="modale-btn primary" onclick="salvaEditor()">💾 Applica</button>
@@ -459,7 +456,8 @@
     <input type="hidden" name="scomparti[{{ $n - 1 }}][numero_scomparto]" id="s{{ $n }}_num" value="{{ $n }}"/>
     <input type="hidden" name="scomparti[{{ $n - 1 }}][id_farmaco]"       id="s{{ $n }}_farm" value="{{ $s['id_farmaco'] ?? '' }}"/>
     <input type="hidden" name="scomparti[{{ $n - 1 }}][id_terapia]"       id="s{{ $n }}_ter" value="{{ $s['id_terapia'] ?? '' }}"/>
-    <input type="hidden" name="scomparti[{{ $n - 1 }}][pieno]"            id="s{{ $n }}_pieno" value="{{ $s['pieno'] ? '1' : '0' }}"/>
+    <input type="hidden" name="scomparti[{{ $n - 1 }}][pieno]"            id="s{{ $n }}_pieno" value="{{ ($s['quantita'] ?? 0) > 0 ? '1' : '0' }}"/>
+    <input type="hidden" name="scomparti[{{ $n - 1 }}][quantita]"         id="s{{ $n }}_quantita" value="{{ $s['quantita'] ?? 0 }}"/>
     @endfor
 </form>
 
@@ -571,7 +569,7 @@
         document.getElementById('modaleEditorNum').textContent = '#' + num;
         document.getElementById('editorFarmaco').value = s.id_farmaco || '';
         document.getElementById('editorTerapia').value = s.id_terapia || '';
-        document.getElementById('editorPieno').value   = s.pieno ? '1' : '0';
+        document.getElementById('editorQuantita').value = s.quantita ?? 0;
         document.getElementById('modaleEditor').classList.add('open');
     }
 
@@ -579,7 +577,8 @@
         const num     = editingNum;
         const farmId  = document.getElementById('editorFarmaco').value;
         const terId   = document.getElementById('editorTerapia').value;
-        const pieno   = document.getElementById('editorPieno').value === '1';
+        const quantita = Math.max(0, parseInt(document.getElementById('editorQuantita').value || '0', 10));
+        const pieno   = quantita > 0;
         const farmOpt = document.getElementById('editorFarmaco').selectedOptions[0];
         const farmNome= farmOpt?.dataset?.nome || null;
 
@@ -588,11 +587,13 @@
         SCOMPARTI_STATE[num].nome_farmaco = farmNome;
         SCOMPARTI_STATE[num].id_terapia   = terId || null;
         SCOMPARTI_STATE[num].pieno        = pieno;
+        SCOMPARTI_STATE[num].quantita     = quantita;
 
         // Aggiorna hidden form
         document.getElementById('s' + num + '_farm').value  = farmId;
         document.getElementById('s' + num + '_ter').value   = terId;
         document.getElementById('s' + num + '_pieno').value = pieno ? '1' : '0';
+        document.getElementById('s' + num + '_quantita').value = String(quantita);
 
         // Aggiorna visualmente la card
         const card = document.getElementById('scomp-card-' + num);
@@ -603,7 +604,7 @@
             const innerHtml = `
                 <div class="scomp-numero">${num}</div>
                 <div class="scomp-farmaco">${farmNome}</div>
-                <span class="scomp-stato ${pieno ? 'pieno':'vuoto'}">${pieno ? '● Pieno' : '○ Vuoto'}</span>
+                <span class="scomp-stato ${pieno ? 'pieno':'vuoto'}">${pieno ? ('● x' + quantita) : '○ Vuoto'}</span>
                 <button class="scomp-edit-btn" onclick="apriEditor(${num})">✏ Modifica</button>`;
             card.innerHTML = innerHtml;
         } else {
