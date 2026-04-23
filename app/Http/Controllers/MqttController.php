@@ -28,13 +28,25 @@ class MqttController extends Controller
             'scomparti' => ScompartoDispositivo::buildPayloadPerDispositivo($idDispositivo),
         ]);
 
-        MQTT::publish($dispositivo->topicComandi(), $payload);
+        try {
+            config(['mqtt-client.connections.default.connection_settings.connect_timeout' => 2]);
+            config(['mqtt-client.connections.default.connection_settings.socket_timeout' => 2]);
+            MQTT::publish($dispositivo->topicComandi(), $payload);
 
-        return response()->json([
-            'ok'        => true,
-            'messaggio' => 'Configurazione inviata al dispositivo.',
-            'payload'   => json_decode($payload),
-        ]);
+            return response()->json([
+                'ok'        => true,
+                'messaggio' => 'Configurazione inviata al dispositivo.',
+                'payload'   => json_decode($payload),
+            ]);
+        } catch (\Throwable $e) {
+            report($e);
+
+            return response()->json([
+                'ok'        => false,
+                'messaggio' => 'Configurazione salvata, ma broker MQTT non raggiungibile.',
+                'payload'   => json_decode($payload),
+            ], 202);
+        }
     }
 
     // â”€â”€ Attiva allarme (buzzer + OLED), il paziente conferma con PIR/tasto â”€â”€

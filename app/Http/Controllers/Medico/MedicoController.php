@@ -215,9 +215,12 @@ class MedicoController extends Controller
         ]);
 
         try {
+            config(['mqtt-client.connections.default.connection_settings.connect_timeout' => 2]);
+            config(['mqtt-client.connections.default.connection_settings.socket_timeout' => 2]);
             MQTT::publish($dispositivo->topicComandi(), $payload);
             $mqttOk = true;
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
+            report($e);
             $mqttOk = false;
         }
 
