@@ -63,7 +63,7 @@ class MqttController extends Controller
 
         $scomparto = ScompartoDispositivo::where('id_dispositivo', $idDispositivo)
             ->where('id_farmaco', $request->id_farmaco)
-            ->where('pieno', true)
+            ->where('quantita', '>', 0)
             ->first();
 
         if (! $scomparto) {

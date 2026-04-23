@@ -253,6 +253,53 @@
         </div>
     </div>
 
+
+    <div class="grid2" style="margin-top:14px;">
+        <div class="card">
+            <div class="card-title"><i data-lucide="calendar-clock"></i> Terapie previste oggi</div>
+            @if($assunzioniOggi->isEmpty())
+                <div style="color:var(--muted);font-size:13px;padding:12px 0;">Nessuna dose prevista oggi.</div>
+            @else
+                <div class="table-wrap">
+                    <table>
+                        <thead><tr><th>Ora</th><th>Farmaco</th><th>Stato</th></tr></thead>
+                        <tbody>
+                        @foreach($assunzioniOggi as $a)
+                            <tr>
+                                <td>{{ optional($a->data_prevista)->format('H:i') }}</td>
+                                <td>{{ $a->somministrazione->terapia->farmaco->nome ?? 'N/A' }}</td>
+                                <td><span class="stato-badge stato-{{ $a->stato }}">{{ statoLabel($a->stato) }}</span></td>
+                            </tr>
+                        @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            @endif
+        </div>
+
+        <div class="card">
+            <div class="card-title"><i data-lucide="history"></i> Storico erogazioni forzate</div>
+            @if($storicoForzate->isEmpty())
+                <div style="color:var(--muted);font-size:13px;padding:12px 0;">Nessuna erogazione forzata registrata.</div>
+            @else
+                <div class="table-wrap">
+                    <table>
+                        <thead><tr><th>Data/Ora</th><th>Azione</th><th>Dettaglio</th></tr></thead>
+                        <tbody>
+                        @foreach($storicoForzate as $ev)
+                            <tr>
+                                <td>{{ \Carbon\Carbon::parse($ev->created_at)->format('d/m H:i') }}</td>
+                                <td>{{ str_replace('_',' ', $ev->azione) }}</td>
+                                <td style="font-size:12px; color:var(--muted);">{{ Str::limit($ev->messaggio ?? '-', 90) }}</td>
+                            </tr>
+                        @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            @endif
+        </div>
+    </div>
+
     <div class="card" id="dispositivi" style="margin-bottom:20px;">
         <div class="card-title">
             <i data-lucide="radio"></i>
