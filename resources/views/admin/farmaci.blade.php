@@ -46,12 +46,12 @@
 
                 <div class="field">
                     <label>Nome *</label>
-                    <input type="text" name="nome" required placeholder="es. Aspirina"/>
+                    <input type="text" name="nome" required/>
                 </div>
 
                 <div class="field">
                     <label>Principio attivo / Dose</label>
-                    <input type="text" name="dose" placeholder="es. Acido acetilsalicilico 100mg"/>
+                    <input type="text" name="dose" />
                 </div>
 
                 <div class="field">

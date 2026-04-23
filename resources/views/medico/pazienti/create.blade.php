@@ -94,12 +94,12 @@
 
                 <div class="field">
                     <label for="nome">Nome <span class="req">*</span></label>
-                    <input id="nome" type="text" name="nome" value="{{ old('nome') }}" placeholder="es. Mario" required/>
+                    <input id="nome" type="text" name="nome" value="{{ old('nome') }}" required/>
                 </div>
 
                 <div class="field">
                     <label for="cognome">Cognome <span class="req">*</span></label>
-                    <input id="cognome" type="text" name="cognome" value="{{ old('cognome') }}" placeholder="es. Rossi" required/>
+                    <input id="cognome" type="text" name="cognome" value="{{ old('cognome') }}" required/>
                 </div>
 
                 <div class="field">
@@ -118,23 +118,22 @@
 
                 <div class="field">
                     <label for="comune_nascita">Comune di nascita <span class="req">*</span></label>
-                    <input id="comune_nascita" type="text" name="comune_nascita" value="{{ old('comune_nascita') }}" placeholder="es. Roma" required/>
-                    <span class="hint">Necessario per il calcolo del codice fiscale</span>
+                    <input id="comune_nascita" type="text" name="comune_nascita" value="{{ old('comune_nascita') }}" required/>
                 </div>
 
                 <div class="field">
-                    <label for="telefono">Telefono <span class="optional">(opzionale)</span></label>
-                    <input id="telefono" type="text" name="telefono" value="{{ old('telefono') }}" placeholder="es. 3331234567"/>
+                    <label for="telefono">Telefono <span class="optional"></span></label>
+                    <input id="telefono" type="text" name="telefono" value="{{ old('telefono') }}"/>
                 </div>
 
                 <div class="field">
-                    <label for="email">Email <span class="optional">(opzionale)</span></label>
-                    <input id="email" type="email" name="email" value="{{ old('email') }}" placeholder="es. mario.rossi@email.it"/>
+                    <label for="email">Email</label>
+                    <input id="email" type="email" name="email" value="{{ old('email') }}"/>
                 </div>
 
                 <div class="field">
-                    <label for="indirizzo">Indirizzo <span class="optional">(opzionale)</span></label>
-                    <input id="indirizzo" type="text" name="indirizzo" value="{{ old('indirizzo') }}" placeholder="es. Via Roma 1, Milano"/>
+                    <label for="indirizzo">Indirizzo</label>
+                    <input id="indirizzo" type="text" name="indirizzo" value="{{ old('indirizzo') }}"/>
                 </div>
 
                 <div class="field full">
@@ -142,7 +141,6 @@
                     <div class="cf-row">
                         <input id="codice_fiscale" type="text" name="codice_fiscale"
                                value="{{ old('codice_fiscale') }}"
-                               placeholder="es. RSSMRA80A01H501Z"
                                maxlength="16" style="text-transform:uppercase;font-family:monospace;letter-spacing:1px;" required/>
                         <button type="button" class="btn-calc" onclick="calcolaCodiceFiscale()">
                             <i data-lucide="calculator"></i>
@@ -150,11 +148,10 @@
                         </button>
                     </div>
                     <div class="cf-result" id="cfResult"></div>
-                    <span class="hint">Inserisci manualmente o clicca "Calcola CF" dopo aver compilato nome, cognome, data nascita, sesso e comune.</span>
                 </div>
 
                 <div class="field full">
-                    <label for="note_mediche">Note mediche <span class="optional">(opzionale)</span></label>
+                    <label for="note_mediche">Note mediche</label>
                     <textarea id="note_mediche" name="note_mediche" placeholder="Allergie, patologie note, annotazioni...">{{ old('note_mediche') }}</textarea>
                 </div>
 
@@ -165,15 +162,13 @@
 
                 <div class="field">
                     <label for="username">Nome utente (login) <span class="req">*</span></label>
-                    <input id="username" type="text" name="username" value="{{ old('username') }}" placeholder="es. mario.rossi" required autocomplete="off"/>
-                    <span class="hint">Il paziente userà questo per accedere.</span>
-                </div>
+                    <input id="username" type="text" name="username" value="{{ old('username') }}" required autocomplete="off"/>
+               </div>
 
                 <div class="field">
                     <label for="password_temp">Password provvisoria <span class="req">*</span></label>
-                    <input id="password_temp" type="text" name="password_temp" value="{{ old('password_temp') }}" placeholder="min. 6 caratteri" required autocomplete="off"/>
-                    <span class="hint">Il paziente dovrà cambiarla al primo accesso.</span>
-                </div>
+                    <input id="password_temp" type="text" name="password_temp" value="{{ old('password_temp') }}" required autocomplete="off"/>
+               </div>
             </div>
 
             <div class="actions">
@@ -191,24 +186,16 @@
 </main>
 
 <script>
-    // ── Calcolo Codice Fiscale italiano ───────────────────────────────────
-    const CODICI_CATASTALI = {
-        'roma': 'H501', 'milano': 'F205', 'napoli': 'F839', 'torino': 'L219',
-        'palermo': 'G273', 'genova': 'D969', 'bologna': 'A944', 'firenze': 'D612',
-        'bari': 'A662', 'catania': 'C351', 'venezia': 'L736', 'verona': 'L781',
-        'messina': 'F158', 'padova': 'G224', 'trieste': 'L424', 'brescia': 'B157',
-        'taranto': 'L049', 'prato': 'G999', 'reggio calabria': 'H224',
-        'modena': 'F257', 'reggio emilia': 'H223', 'perugia': 'G478',
-        'livorno': 'E625', 'ravenna': 'H199', 'cagliari': 'B354',
-        'foggia': 'D643', 'rimini': 'H294', 'salerno': 'H703', 'ferrara': 'D548',
-        'sassari': 'I452', 'latina': 'E472', 'giugliano in campania': 'E054',
-        'monza': 'F704', 'bergamo': 'A794', 'siracusa': 'I754', 'pescara': 'G482',
-        'vicenza': 'L840', 'trento': 'L378', 'novara': 'F952', 'ancona': 'A271',
-        'lecce': 'E506', 'udine': 'L483', 'andria': 'A285', 'barletta': 'A669',
-        'arezzo': 'A390', 'cesena': 'C573', 'pesaro': 'G453', 'pisa': 'G702',
-        'catanzaro': 'C352', 'alessandria': 'A182', 'la spezia': 'E463',
-        'vicenza': 'L840', 'terni': 'L117', 'forlì': 'D704', 'bolzano': 'A952',
-    };
+    async function trovaCodiceCatastale(comune) {
+        const response = await fetch(`/comuni/cerca?nome=${encodeURIComponent(comune)}`);
+        const data = await response.json();
+
+        if (data.found) {
+            return data.codice;
+        }
+
+        return null;
+    }
 
     const MESI = ['A','B','C','D','E','H','L','M','P','R','S','T'];
     const TAB_CONSONANTI = {'B':0,'C':1,'D':2,'F':3,'G':4,'H':5,'J':6,'K':7,'L':8,'M':9,'N':10,'P':11,'Q':12,'R':13,'S':14,'T':15,'V':16,'W':17,'X':18,'Y':19,'Z':20};
@@ -229,36 +216,45 @@
         return combined.slice(0, 3).join('');
     }
 
-    function calcolaCodiceFiscale() {
-        const nome = document.getElementById('nome').value.trim();
+    async function trovaCodiceCatastale(comune) {
+        const response = await fetch(`/comuni/cerca?nome=${encodeURIComponent(comune)}`);
+        const data = await response.json();
+        return data.found ? data.codice : null;
+    }
+
+    async function calcolaCodiceFiscale() {
+        const nome    = document.getElementById('nome').value.trim();
         const cognome = document.getElementById('cognome').value.trim();
-        const dn = document.getElementById('data_nascita').value;
-        const sesso = document.getElementById('sesso').value;
-        const comune = document.getElementById('comune_nascita').value.trim().toLowerCase();
+        const dn      = document.getElementById('data_nascita').value;
+        const sesso   = document.getElementById('sesso').value;
+        const comune  = document.getElementById('comune_nascita').value.trim();
 
         if (!nome || !cognome || !dn || !sesso || !comune) {
-            alert('Compila Nome, Cognome, Data di nascita, Sesso e Comune di nascita per calcolare il codice fiscale.');
+            alert('Compila: Nome, Cognome, Data di nascita, Sesso e Comune di nascita per calcolare il CF.');
             return;
         }
 
-        const codiceCatastale = CODICI_CATASTALI[comune];
+        const codiceCatastale = await trovaCodiceCatastale(comune);
+
         if (!codiceCatastale) {
             const cfBox = document.getElementById('cfResult');
             cfBox.style.display = 'block';
             cfBox.style.background = '#fff7ed';
             cfBox.style.borderColor = '#fed7aa';
             cfBox.style.color = '#c2410c';
-            cfBox.textContent = 'Comune "' + document.getElementById('comune_nascita').value + '" non trovato. Inserisci il CF manualmente o verifica il nome del comune.';
+            cfBox.textContent = 'Comune non trovato. Verifica il nome inserito.';
             return;
         }
 
         const [anno, mese, giorno] = dn.split('-');
 
         const cfCognome = codiceParte(cognome, false);
-        const cfNome = codiceParte(nome, true);
-        const cfAnno = anno.substring(2);
-        const cfMese = MESI[parseInt(mese) - 1];
-        const cfGiorno = sesso === 'M' ? giorno.padStart(2, '0') : String(parseInt(giorno) + 40).padStart(2, '0');
+        const cfNome    = codiceParte(nome, true);
+        const cfAnno    = anno.substring(2);
+        const cfMese    = MESI[parseInt(mese) - 1];
+        const cfGiorno  = sesso === 'M'
+            ? giorno.padStart(2, '0')
+            : String(parseInt(giorno) + 40).padStart(2, '0');
 
         const base = cfCognome + cfNome + cfAnno + cfMese + cfGiorno + codiceCatastale;
 
@@ -269,7 +265,9 @@
             if (i % 2 === 0) {
                 somma += TAB_DISPARI[val] ?? val;
             } else {
-                somma += TAB_CONSONANTI[c] !== undefined ? TAB_CONSONANTI[c] : (TAB_VOCALI[c] !== undefined ? TAB_VOCALI[c] : val);
+                somma += TAB_CONSONANTI[c] !== undefined
+                    ? TAB_CONSONANTI[c]
+                    : (TAB_VOCALI[c] !== undefined ? TAB_VOCALI[c] : val);
             }
         }
 
@@ -285,9 +283,8 @@
         cfBox.style.background = '#f0fdf4';
         cfBox.style.borderColor = '#86efac';
         cfBox.style.color = '#15803d';
-        cfBox.textContent = 'CF calcolato: ' + cf + ' — Verifica che sia corretto prima di salvare.';
+        cfBox.textContent = 'CF calcolato: ' + cf;
     }
-
     document.getElementById('codice_fiscale').addEventListener('input', function() {
         this.value = this.value.toUpperCase();
     });

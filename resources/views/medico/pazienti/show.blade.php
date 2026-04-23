@@ -269,12 +269,12 @@
                 <div class="form-row">
                     <div>
                         <label>Codice seriale ESP32 *</label>
-                        <input type="text" name="codice_seriale" placeholder="es. disp_01" required style="text-transform:lowercase"/>
+                        <input type="text" name="codice_seriale" required style="text-transform:lowercase"/>
                         <small style="color:var(--muted);font-size:11px;margin-top:4px;display:block;">Il codice deve corrispondere all'ID configurato nell'ESP32 (es. <code>disp_01</code>). Il topic MQTT sarà <code>pillmate/{codice}/...</code></small>
                     </div>
                     <div>
                         <label>Nome dispositivo</label>
-                        <input type="text" name="nome_dispositivo" placeholder="es. Dispenser camera da letto"/>
+                        <input type="text" name="nome_dispositivo"/>
                     </div>
                 </div>
                 <div style="display:flex;gap:10px;margin-top:4px;">
@@ -339,12 +339,12 @@
                 </div>
                 <div>
                     <label>Oggetto *</label>
-                    <input type="text" name="titolo" placeholder="es. Ricordati di prendere la pillola" required/>
+                    <input type="text" name="titolo" required/>
                 </div>
             </div>
             <div>
                 <label>Testo del messaggio *</label>
-                <textarea name="messaggio" rows="3" placeholder="Scrivi qui il tuo messaggio per il paziente..." required></textarea>
+                <textarea name="messaggio" rows="3" required></textarea>
             </div>
             <div>
                 <button type="submit" class="btn-submit">

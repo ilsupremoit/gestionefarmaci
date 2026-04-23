@@ -16,9 +16,12 @@ use App\Http\Controllers\Paziente\PazienteController;
 use Illuminate\Foundation\Auth\EmailVerificationRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use App\Http\Controllers\ComuneController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\AdminController;
 
+
+Route::get('/comuni/cerca', [ComuneController::class, 'cerca']);
 // ── Root ─────────────────────────────────────────────────────────────────────
 Route::get('/', function () {
     if (Auth::check()) {
@@ -82,6 +85,12 @@ Route::middleware(['auth', 'role:medico'])->prefix('medico')->name('medico.')->g
     Route::get('/pazienti/{paziente}/dispositivi/{dispositivo}',                 [MedicoController::class, 'dispositivoShow'])->name('pazienti.dispositivi.show');
     Route::post('/pazienti/{paziente}/dispositivi/{dispositivo}/comando',        [MedicoController::class, 'dispositivoComando'])->name('pazienti.dispositivi.comando');
     Route::get('/pazienti/{paziente}/dispositivi/{dispositivo}/telemetria-live', [MedicoController::class, 'telemetriaLive'])->name('pazienti.dispositivi.telemetria');
+
+    // Scomparti carosello (NUOVO)
+    Route::post('/pazienti/{paziente}/dispositivi/{dispositivo}/scomparti',        [MedicoController::class, 'scompartiSalva'])->name('pazienti.dispositivi.scomparti');
+    Route::post('/pazienti/{paziente}/dispositivi/{dispositivo}/eroga-forzata',    [MedicoController::class, 'erogazioneForzata'])->name('pazienti.dispositivi.eroga_forzata');
+    Route::post('/pazienti/{paziente}/dispositivi/{dispositivo}/allarme/attiva',   [MedicoController::class, 'attivaAllarme'])->name('pazienti.dispositivi.allarme_attiva');
+    Route::post('/pazienti/{paziente}/dispositivi/{dispositivo}/allarme/disattiva',[MedicoController::class, 'disattivaAllarme'])->name('pazienti.dispositivi.allarme_disattiva');
 
     // Scomparti dispositivo (gestione carosello)
     Route::get('/dispositivi/{idDispositivo}/scomparti',                          [DispositivoController::class, 'scomparti'])->name('dispositivi.scomparti');

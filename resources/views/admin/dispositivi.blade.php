@@ -69,7 +69,6 @@
                         <td style="font-size:13px;">
                             @if($u)
                                 <div style="font-weight:600;">{{ $u->cognome }} {{ $u->nome }}</div>
-                                <div style="font-size:11px;color:var(--muted);">@{{ $u->username }}</div>
                             @else
                                 <span style="color:var(--muted);">—</span>
                             @endif

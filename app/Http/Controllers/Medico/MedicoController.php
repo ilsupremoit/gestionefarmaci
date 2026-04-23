@@ -4,7 +4,10 @@ namespace App\Http\Controllers\Medico;
 
 use App\Http\Controllers\Controller;
 use App\Models\Dispositivo;
+use App\Models\Farmaco;
 use App\Models\Paziente;
+use App\Models\ScompartoDispositivo;
+use App\Models\Terapia;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -19,24 +22,20 @@ class MedicoController extends Controller
     {
         $medico = Auth::user();
 
-        // Tutti i destinatari possibili
         $pazienti  = $medico->pazientiSeguiti()->with('utente')->get();
         $medici    = User::where('ruolo', 'medico')->where('id', '!=', $medico->id)->orderBy('cognome')->get();
         $adminList = User::where('ruolo', 'admin')->orderBy('cognome')->get();
 
-        // Messaggi inviati
         $inviati = DB::table('notifiche')
             ->where('id_mittente', $medico->id)
             ->orderByDesc('data_invio')
             ->paginate(15, ['*'], 'inviati');
 
-        // Messaggi ricevuti
         $ricevuti = DB::table('notifiche')
             ->where('id_utente', $medico->id)
             ->orderByDesc('data_invio')
             ->paginate(15, ['*'], 'ricevuti');
 
-        // Segna come letti (senza letto_at che non esiste nel DB attuale)
         DB::table('notifiche')
             ->where('id_utente', $medico->id)
             ->where('letta', false)
@@ -79,20 +78,17 @@ class MedicoController extends Controller
         $this->autorizzaPaziente($paziente);
         abort_if($dispositivo->id_paziente !== $paziente->id, 403);
 
-        // Ultimi 20 eventi
         $eventi = DB::table('eventi_dispositivo')
             ->where('id_dispositivo', $dispositivo->id)
             ->orderByDesc('created_at')
             ->limit(20)
             ->get();
 
-        // Ultima telemetria
         $ultimaTelemetria = DB::table('telemetrie_dispositivo')
             ->where('id_dispositivo', $dispositivo->id)
             ->orderByDesc('created_at')
             ->first();
 
-        // Storico telemetria (ultimi 50 punti per grafico)
         $storicoTelemetria = DB::table('telemetrie_dispositivo')
             ->where('id_dispositivo', $dispositivo->id)
             ->orderByDesc('created_at')
@@ -101,8 +97,21 @@ class MedicoController extends Controller
             ->reverse()
             ->values();
 
+        // Carica gli 8 scomparti con farmaco e terapia associata
+        $scomparti = $this->getScomparti($dispositivo);
+
+        // Farmaci disponibili per il dropdown
+        $farmaci = Farmaco::orderBy('nome')->get();
+
+        // Terapie attive del paziente per il dropdown
+        $terapieAttive = Terapia::with('farmaco', 'somministrazioni')
+            ->where('id_paziente', $paziente->id)
+            ->where('attiva', true)
+            ->get();
+
         return view('medico.dispositivo-show', compact(
-            'paziente', 'dispositivo', 'eventi', 'ultimaTelemetria', 'storicoTelemetria'
+            'paziente', 'dispositivo', 'eventi', 'ultimaTelemetria',
+            'storicoTelemetria', 'scomparti', 'farmaci', 'terapieAttive'
         ));
     }
 
@@ -118,7 +127,7 @@ class MedicoController extends Controller
             'codice_seriale.unique'   => 'Questo codice seriale è già registrato.',
         ]);
 
-        Dispositivo::create([
+        $dispositivo = Dispositivo::create([
             'codice_seriale'   => $request->codice_seriale,
             'id_paziente'      => $paziente->id,
             'nome_dispositivo' => $request->nome_dispositivo ?? 'PillMate Dispenser',
@@ -126,40 +135,250 @@ class MedicoController extends Controller
             'allarme_attivo'   => false,
         ]);
 
-        return back()->with('success', '📡 Dispositivo aggiunto. Appena si connette al broker MQTT apparirà online.');
+        // Crea i 8 scomparti vuoti con gli angoli precalcolati
+        for ($i = 1; $i <= 8; $i++) {
+            ScompartoDispositivo::create([
+                'id_dispositivo'  => $dispositivo->id,
+                'numero_scomparto'=> $i,
+                'angolo'          => ScompartoDispositivo::ANGOLI[$i - 1],
+                'id_farmaco'      => null,
+                'pieno'           => false,
+            ]);
+        }
+
+        return back()->with('success', '📡 Dispositivo aggiunto con 8 scomparti vuoti. Configurali qui sotto.');
+    }
+
+    // ── GESTIONE SCOMPARTI ────────────────────────────────────────
+
+    /**
+     * Salva la configurazione di tutti gli 8 scomparti e
+     * pubblica via MQTT il comando "configura_scomparti" all'ESP32.
+     */
+    public function scompartiSalva(Request $request, Paziente $paziente, Dispositivo $dispositivo)
+    {
+        $this->autorizzaPaziente($paziente);
+        abort_if($dispositivo->id_paziente !== $paziente->id, 403);
+
+        $request->validate([
+            'scomparti'                    => ['required', 'array', 'size:8'],
+            'scomparti.*.numero_scomparto' => ['required', 'integer', 'between:1,8'],
+            'scomparti.*.id_farmaco'       => ['nullable', 'exists:farmaci,id'],
+            'scomparti.*.id_terapia'       => ['nullable', 'exists:terapie,id'],
+            'scomparti.*.pieno'            => ['nullable', 'boolean'],
+        ]);
+
+        $mqttPayload = [];
+
+        foreach ($request->scomparti as $s) {
+            $num      = (int) $s['numero_scomparto'];
+            $idFarm   = $s['id_farmaco'] ?: null;
+            $idTer    = $s['id_terapia'] ?: null;
+            $pieno    = isset($s['pieno']) ? (bool) $s['pieno'] : false;
+            $angolo   = ScompartoDispositivo::ANGOLI[$num - 1];
+
+            // Upsert: aggiorna o crea lo scomparto
+            ScompartoDispositivo::updateOrCreate(
+                ['id_dispositivo' => $dispositivo->id, 'numero_scomparto' => $num],
+                ['angolo' => $angolo, 'id_farmaco' => $idFarm, 'id_terapia' => $idTer, 'pieno' => $pieno]
+            );
+
+            // Prepara payload MQTT solo per scomparti con farmaco
+            if ($idFarm) {
+                $farmaco = Farmaco::find($idFarm);
+                $mqttPayload[] = [
+                    'numero'       => $num,
+                    'id_farmaco'   => (int) $idFarm,
+                    'nome_farmaco' => $farmaco?->nome ?? 'Farmaco',
+                    'pieno'        => $pieno,
+                ];
+            } else {
+                // Scomparto vuoto — lo comunichiamo ugualmente
+                $mqttPayload[] = [
+                    'numero'       => $num,
+                    'id_farmaco'   => 0,
+                    'nome_farmaco' => '---',
+                    'pieno'        => false,
+                ];
+            }
+        }
+
+        // Pubblica configurazione scomparti via MQTT
+        $payload = json_encode([
+            'comando'    => 'configura_scomparti',
+            'scomparti'  => $mqttPayload,
+            'medico_id'  => Auth::id(),
+            'timestamp'  => now()->toDateTimeString(),
+        ]);
+
+        try {
+            MQTT::publish($dispositivo->topicComandi(), $payload);
+            $mqttOk = true;
+        } catch (\Exception $e) {
+            $mqttOk = false;
+        }
+
+        // Log evento
+        DB::table('eventi_dispositivo')->insert([
+            'id_dispositivo'     => $dispositivo->id,
+            'id_paziente'        => $paziente->id,
+            'topic'              => $dispositivo->topicComandi(),
+            'azione'             => 'configura_scomparti',
+            'metodo_attivazione' => 'medico_web',
+            'severita'           => 'info',
+            'messaggio'          => 'Configurazione scomparti aggiornata dal Dr. ' . Auth::user()->cognome,
+            'payload_json'       => $payload,
+            'created_at'         => now(),
+        ]);
+
+        $msg = $mqttOk
+            ? '✅ Scomparti salvati e configurazione inviata al dispositivo.'
+            : '⚠️ Scomparti salvati nel DB ma MQTT non disponibile (il dispositivo aggiornerà al prossimo collegamento).';
+
+        return back()->with($mqttOk ? 'success' : 'warning', $msg);
     }
 
     /**
-     * Invia un comando MQTT all'ESP32.
-     *
-     * IMPORTANTE: il firmware C++ legge il campo "comando" (non "azione").
-     * Comandi supportati: eroga_farmaco, attiva_allarme, disattiva_allarme,
-     *                     set_sveglia, get_mappa_scomparti, buzzer_test
+     * Erogazione forzata di uno scomparto specifico scelto dal medico.
+     * Invia "eroga_farmaco" con id_farmaco + numero_scomparto.
      */
+    public function erogazioneForzata(Request $request, Paziente $paziente, Dispositivo $dispositivo)
+    {
+        $this->autorizzaPaziente($paziente);
+        abort_if($dispositivo->id_paziente !== $paziente->id, 403);
+
+        $request->validate([
+            'numero_scomparto' => ['required', 'integer', 'between:1,8'],
+        ]);
+
+        $num = (int) $request->numero_scomparto;
+
+        // Recupera lo scomparto dal DB
+        $scomparto = ScompartoDispositivo::where('id_dispositivo', $dispositivo->id)
+            ->where('numero_scomparto', $num)
+            ->first();
+
+        if (!$scomparto || !$scomparto->id_farmaco) {
+            return back()->with('error', "❌ Lo scomparto {$num} non ha un farmaco assegnato.");
+        }
+
+        $farmaco = Farmaco::find($scomparto->id_farmaco);
+
+        $payload = json_encode([
+            'comando'          => 'eroga_farmaco',
+            'id_farmaco'       => (int) $scomparto->id_farmaco,
+            'numero_scomparto' => $num,
+            'nome_farmaco'     => $farmaco?->nome ?? '---',
+            'medico_id'        => Auth::id(),
+            'forzata'          => true,
+            'timestamp'        => now()->toDateTimeString(),
+        ]);
+
+        try {
+            MQTT::publish($dispositivo->topicComandi(), $payload);
+        } catch (\Exception $e) {
+            return back()->with('error', '❌ Errore MQTT: ' . $e->getMessage());
+        }
+
+        // Segna come apertura forzata nel DB
+        $scomparto->update(['pieno' => false]);
+
+        DB::table('eventi_dispositivo')->insert([
+            'id_dispositivo'     => $dispositivo->id,
+            'id_paziente'        => $paziente->id,
+            'topic'              => $dispositivo->topicComandi(),
+            'azione'             => 'apertura_forzata',
+            'metodo_attivazione' => 'medico_web',
+            'severita'           => 'warning',
+            'messaggio'          => "Erogazione forzata scomparto {$num} ({$farmaco?->nome}) dal Dr. " . Auth::user()->cognome,
+            'payload_json'       => $payload,
+            'created_at'         => now(),
+        ]);
+
+        return back()->with('success', "💊 Erogazione forzata scomparto {$num} inviata al dispositivo.");
+    }
+
+    /**
+     * Attiva allarme per lo scomparto/farmaco specificato.
+     */
+    public function attivaAllarme(Request $request, Paziente $paziente, Dispositivo $dispositivo)
+    {
+        $this->autorizzaPaziente($paziente);
+        abort_if($dispositivo->id_paziente !== $paziente->id, 403);
+
+        $request->validate([
+            'numero_scomparto' => ['required', 'integer', 'between:1,8'],
+        ]);
+
+        $num = (int) $request->numero_scomparto;
+        $scomparto = ScompartoDispositivo::where('id_dispositivo', $dispositivo->id)
+            ->where('numero_scomparto', $num)->first();
+
+        if (!$scomparto || !$scomparto->id_farmaco) {
+            return response()->json(['success' => false, 'error' => "Scomparto {$num} senza farmaco."]);
+        }
+
+        $payload = json_encode([
+            'comando'          => 'attiva_allarme',
+            'id_farmaco'       => (int) $scomparto->id_farmaco,
+            'numero_scomparto' => $num,
+            'medico_id'        => Auth::id(),
+            'timestamp'        => now()->toDateTimeString(),
+        ]);
+
+        try {
+            MQTT::publish($dispositivo->topicComandi(), $payload);
+            $dispositivo->update(['allarme_attivo' => true]);
+            return response()->json(['success' => true]);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'error' => $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Disattiva allarme.
+     */
+    public function disattivaAllarme(Paziente $paziente, Dispositivo $dispositivo)
+    {
+        $this->autorizzaPaziente($paziente);
+        abort_if($dispositivo->id_paziente !== $paziente->id, 403);
+
+        $payload = json_encode([
+            'comando'   => 'disattiva_allarme',
+            'medico_id' => Auth::id(),
+            'timestamp' => now()->toDateTimeString(),
+        ]);
+
+        try {
+            MQTT::publish($dispositivo->topicComandi(), $payload);
+            $dispositivo->update(['allarme_attivo' => false]);
+            return response()->json(['success' => true]);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'error' => $e->getMessage()]);
+        }
+    }
+
     public function dispositivoComando(Request $request, Paziente $paziente, Dispositivo $dispositivo)
     {
         $this->autorizzaPaziente($paziente);
         abort_if($dispositivo->id_paziente !== $paziente->id, 403);
 
         $request->validate([
-            'azione'        => ['required', 'in:eroga_farmaco,attiva_allarme,disattiva_allarme,set_sveglia,get_mappa_scomparti,buzzer_test,reset'],
+            'azione'        => ['required', 'in:eroga_farmaco,attiva_allarme,disattiva_allarme,set_sveglia,buzzer_test,reset'],
             'payload_extra' => ['nullable', 'array'],
         ]);
 
         $azione = $request->input('azione');
         $topic  = $dispositivo->topicComandi();
 
-        // Il firmware C++ usa la chiave "comando" — non "azione"
         $payload = [
             'comando'   => $azione,
             'medico_id' => Auth::id(),
             'timestamp' => now()->toDateTimeString(),
         ];
 
-        // Gestione speciale sveglia: il firmware si aspetta "ora" (int) e "minuto" (int)
         if ($azione === 'set_sveglia') {
             $oraRaw = $request->input('payload_extra.ora', '08:00');
-
             if (str_contains($oraRaw, ':')) {
                 [$h, $m] = explode(':', $oraRaw);
                 $payload['ora']    = (int) $h;
@@ -169,7 +388,6 @@ class MedicoController extends Controller
                 $payload['minuto'] = (int) ($request->input('payload_extra.minuto', 0));
             }
         } else {
-            // Merge degli altri campi extra (es. id_farmaco per eroga_farmaco/attiva_allarme)
             $extra = $request->input('payload_extra', []);
             if (!empty($extra)) {
                 $payload = array_merge($payload, $extra);
@@ -179,7 +397,6 @@ class MedicoController extends Controller
         try {
             MQTT::publish($topic, json_encode($payload));
 
-            // Aggiorna DB locale in base all'azione
             if ($azione === 'attiva_allarme')    $dispositivo->update(['allarme_attivo' => true]);
             if ($azione === 'disattiva_allarme') $dispositivo->update(['allarme_attivo' => false]);
             if ($azione === 'set_sveglia') {
@@ -216,6 +433,9 @@ class MedicoController extends Controller
             && $dispositivo->ultimo_payload_at
             && \Carbon\Carbon::parse($dispositivo->ultimo_payload_at)->diffInMinutes(now()) <= 5;
 
+        // Scomparti aggiornati per polling live
+        $scomparti = $this->getScomparti($dispositivo);
+
         return response()->json([
             'temperatura'       => $dispositivo->temperatura,
             'umidita'           => $dispositivo->umidita,
@@ -225,10 +445,59 @@ class MedicoController extends Controller
             'allarme_attivo'    => (bool) $dispositivo->allarme_attivo,
             'online'            => $online,
             'last_update'       => $dispositivo->ultimo_payload_at,
+            'scomparti'         => $scomparti,
         ]);
     }
 
     // ── Helpers ───────────────────────────────────────────────────
+
+    /**
+     * Restituisce array 8 scomparti con info farmaco/terapia.
+     * Crea gli slot mancanti in automatico.
+     */
+    private function getScomparti(Dispositivo $dispositivo): array
+    {
+        $esistenti = ScompartoDispositivo::with('farmaco', 'terapia.farmaco')
+            ->where('id_dispositivo', $dispositivo->id)
+            ->get()
+            ->keyBy('numero_scomparto');
+
+        $risultato = [];
+        for ($i = 1; $i <= 8; $i++) {
+            if ($esistenti->has($i)) {
+                $s = $esistenti[$i];
+                $risultato[$i] = [
+                    'numero'        => $i,
+                    'angolo'        => ScompartoDispositivo::ANGOLI[$i - 1],
+                    'id_farmaco'    => $s->id_farmaco,
+                    'nome_farmaco'  => $s->farmaco?->nome,
+                    'dose_farmaco'  => $s->farmaco?->dose,
+                    'id_terapia'    => $s->id_terapia,
+                    'terapia_info'  => $s->terapia ? $s->terapia->farmaco?->nome . ' — ' . $s->terapia->somministrazioni->map(fn($x) => substr($x->ora,0,5).' '.$x->giorno_settimana)->join(', ') : null,
+                    'pieno'         => (bool) $s->pieno,
+                ];
+            } else {
+                // Crea slot vuoto
+                ScompartoDispositivo::create([
+                    'id_dispositivo'   => $dispositivo->id,
+                    'numero_scomparto' => $i,
+                    'angolo'           => ScompartoDispositivo::ANGOLI[$i - 1],
+                    'pieno'            => false,
+                ]);
+                $risultato[$i] = [
+                    'numero'       => $i,
+                    'angolo'       => ScompartoDispositivo::ANGOLI[$i - 1],
+                    'id_farmaco'   => null,
+                    'nome_farmaco' => null,
+                    'dose_farmaco' => null,
+                    'id_terapia'   => null,
+                    'terapia_info' => null,
+                    'pieno'        => false,
+                ];
+            }
+        }
+        return $risultato;
+    }
 
     private function autorizzaPaziente(Paziente $paziente): void
     {
