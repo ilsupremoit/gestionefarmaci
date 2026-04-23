@@ -604,7 +604,7 @@
             const innerHtml = `
                 <div class="scomp-numero">${num}</div>
                 <div class="scomp-farmaco">${farmNome}</div>
-                <span class="scomp-stato ${pieno ? 'pieno':'vuoto'}">${pieno ? ('● x' + quantita) : '○ Vuoto'}</span>
+                <span class="scomp-stato ${pieno ? 'pieno':'vuoto'}">${pieno ? `● x${quantita}` : '○ Vuoto'}</span>
                 <button class="scomp-edit-btn" onclick="apriEditor(${num})">✏ Modifica</button>`;
             card.innerHTML = innerHtml;
         } else {
