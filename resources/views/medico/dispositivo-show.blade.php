@@ -7,7 +7,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}"/>
     <title>PillMate — Dispositivo {{ $dispositivo->codice_seriale }}</title>
     <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
-    @vite('resources/css/dispositivo-show.css')
+    @vite('resources/css/medico/dispositivo-show.css')
 </head>
 <body>
 @php

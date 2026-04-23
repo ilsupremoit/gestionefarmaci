@@ -1,5 +1,4 @@
-{{-- resources/views/medico/dashboard.blade.php --}}
-    <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="it">
 <head>
         @vite('resources/js/app.js')
@@ -7,7 +6,7 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
         <title>PillMate — Dashboard Medico</title>
         <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
-        @vite('resources/css/dashboard.css')
+        @vite('resources/css/medico/dashboard.css')
 </head>
 <body>
 

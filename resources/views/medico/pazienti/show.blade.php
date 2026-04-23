@@ -8,7 +8,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}"/>
     <title>PillMate — {{ $paziente->utente->cognome }} {{ $paziente->utente->nome }}</title>
     <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
-    @vite('resources/css/infoPaziente.css')
+    @vite('resources/css/medico/infoPaziente.css')
 
 </head>
 <body>
