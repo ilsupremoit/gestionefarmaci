@@ -258,7 +258,7 @@ class AdminController extends Controller
         DB::table('notifiche')
             ->where('id_utente', $admin->id)
             ->where('letta', false)
-            ->update(['letta' => true, 'letto_at' => now()]);
+            ->update(['letta' => true]);
 
         return view('admin.notifiche', compact('admin', 'medici', 'adminList', 'inviati', 'ricevuti'));
     }

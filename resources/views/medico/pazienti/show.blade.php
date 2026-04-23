@@ -9,35 +9,35 @@
     <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
     <style>
         :root {
-            --bg:      #0b0f1a;
-            --surface: #111827;
-            --border:  #1f2d45;
+            --bg:      #f0f7ff;
+            --surface: #ffffff;
+            --border:  #dde8f5;
             --accent:  #3b82f6;
             --accent2: #06b6d4;
             --green:   #10b981;
             --red:     #ef4444;
             --yellow:  #f59e0b;
-            --text:    #e2e8f0;
+            --text:    #1e293b;
             --muted:   #64748b;
         }
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; display: flex; }
 
         /* Sidebar */
-        .sidebar { width: 240px; flex-shrink: 0; background: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; padding: 28px 0; position: fixed; top: 0; left: 0; height: 100vh; }
-        .brand { padding: 0 24px 28px; border-bottom: 1px solid var(--border); margin-bottom: 20px; }
-        .brand-name { font-family: 'Syne', sans-serif; font-size: 20px; font-weight: 800; background: linear-gradient(135deg, #fff, var(--accent2)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        .nav-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); padding: 0 24px; margin-bottom: 8px; }
-        .nav-item { display: flex; align-items: center; gap: 12px; padding: 10px 24px; font-size: 14px; color: var(--muted); text-decoration: none; transition: all .2s; }
-        .nav-item:hover { color: var(--text); background: rgba(255,255,255,.04); }
-        .nav-item.active { color: var(--accent); background: rgba(59,130,246,.08); border-right: 2px solid var(--accent); }
-        .sidebar-footer { margin-top: auto; padding: 20px 24px 0; border-top: 1px solid var(--border); }
+        .sidebar { width: 240px; flex-shrink: 0; background: #fff; border-right: 1px solid var(--border); box-shadow: 2px 0 12px rgba(0,0,0,.04); display: flex; flex-direction: column; padding: 24px 0; position: fixed; top: 0; left: 0; height: 100vh; }
+        .brand { padding: 0 20px 20px; border-bottom: 1px solid var(--border); margin-bottom: 16px; }
+        .brand-name { font-family: 'Syne', sans-serif; font-size: 20px; font-weight: 800; background: linear-gradient(135deg, var(--accent), var(--accent2)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .nav-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); padding: 0 20px; margin-bottom: 8px; }
+        .nav-item { display: flex; align-items: center; gap: 12px; padding: 10px 20px; font-size: 14px; color: var(--muted); text-decoration: none; transition: all .2s; border-left: 3px solid transparent; }
+        .nav-item:hover { color: var(--text); background: #f5f3ff; }
+        .nav-item.active { color: var(--accent); background: #eff6ff; border-left-color: var(--accent); font-weight: 600; }
+        .sidebar-footer { margin-top: auto; padding: 16px 20px 0; border-top: 1px solid var(--border); }
         .user-info { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
-        .avatar { width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, var(--accent), var(--accent2)); display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; flex-shrink: 0; }
-        .user-name { font-size: 13px; font-weight: 600; }
+        .avatar { width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, var(--accent), var(--accent2)); display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; color: #fff; flex-shrink: 0; }
+        .user-name { font-size: 13px; font-weight: 600; color: var(--text); }
         .user-role { font-size: 11px; color: var(--muted); }
-        .btn-logout { width: 100%; padding: 9px; background: rgba(239,68,68,.1); border: 1px solid rgba(239,68,68,.2); border-radius: 8px; color: #fca5a5; font-size: 13px; cursor: pointer; transition: all .2s; font-family: inherit; }
-        .btn-logout:hover { background: rgba(239,68,68,.2); }
+        .btn-logout { width: 100%; padding: 9px; background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; color: #b91c1c; font-size: 13px; cursor: pointer; transition: all .2s; font-family: inherit; font-weight: 600; }
+        .btn-logout:hover { background: #fee2e2; }
 
         /* Main */
         .main { margin-left: 240px; flex: 1; padding: 36px 40px; }
@@ -130,20 +130,16 @@
         tr:hover td { background: rgba(255,255,255,.02); }
 
         /* Stato badge */
-        .stato-badge {
-            display: inline-flex; align-items: center; gap: 5px;
-            padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600;
-            cursor: pointer; transition: opacity .2s;
-        }
+        .stato-badge { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; cursor: pointer; transition: opacity .2s; }
         .stato-badge:hover { opacity: .8; }
-        .stato-assunta    { background: rgba(16,185,129,.15); color: #6ee7b7; border: 1px solid rgba(16,185,129,.25); }
-        .stato-erogata    { background: rgba(6,182,212,.15); color: #67e8f9; border: 1px solid rgba(6,182,212,.25); }
-        .stato-saltata    { background: rgba(239,68,68,.15); color: #fca5a5; border: 1px solid rgba(239,68,68,.25); }
-        .stato-non_ritirata { background: rgba(239,68,68,.1); color: #fca5a5; border: 1px solid rgba(239,68,68,.2); }
-        .stato-in_attesa  { background: rgba(245,158,11,.12); color: #fcd34d; border: 1px solid rgba(245,158,11,.2); }
-        .stato-ritardo    { background: rgba(245,158,11,.12); color: #fcd34d; border: 1px solid rgba(245,158,11,.2); }
-        .stato-allarme_attivo { background: rgba(239,68,68,.2); color: #fca5a5; border: 1px solid rgba(239,68,68,.4); animation: pulse 1.5s infinite; }
-        .stato-apertura_forzata { background: rgba(59,130,246,.15); color: #93c5fd; border: 1px solid rgba(59,130,246,.25); }
+        .stato-assunta    { background: #f0fdf4; color: #15803d; border: 1px solid #86efac; }
+        .stato-erogata    { background: #ecfeff; color: #0e7490; border: 1px solid #67e8f9; }
+        .stato-saltata    { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; }
+        .stato-non_ritirata { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; }
+        .stato-in_attesa  { background: #fff7ed; color: #c2410c; border: 1px solid #fed7aa; }
+        .stato-ritardo    { background: #fff7ed; color: #c2410c; border: 1px solid #fed7aa; }
+        .stato-allarme_attivo { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; animation: pulse 1.5s infinite; }
+        .stato-apertura_forzata { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; }
 
         /* Confermata da badge */
         .conf-badge { font-size: 10px; color: var(--muted); background: rgba(255,255,255,.04); padding: 2px 7px; border-radius: 10px; }

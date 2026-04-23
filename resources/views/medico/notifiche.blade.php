@@ -27,26 +27,23 @@
         .alert-success{background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.3);color:#6ee7b7}
         .alert-error{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);color:#fca5a5}
         .card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:22px;margin-bottom:20px}
-        .card-title{font-family:'Syne',sans-serif;font-size:15px;font-weight:700;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+        .card-title{font-family:'Syne',sans-serif;font-size:15px;font-weight:700;margin-bottom:16px}
         .field{margin-bottom:12px}
         .field label{font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);font-weight:700;display:block;margin-bottom:5px}
         .field input,.field select,.field textarea{width:100%;background:#0f172a;border:1px solid var(--border);color:var(--text);padding:10px 13px;border-radius:9px;font:inherit;font-size:13px;outline:none;transition:border-color .2s}
         .field input:focus,.field select:focus,.field textarea:focus{border-color:var(--accent)}
         .field select option{background:#111827}
         .field textarea{min-height:90px;resize:vertical}
-        .btn{display:inline-flex;align-items:center;gap:6px;padding:10px 18px;border-radius:10px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;border:none;transition:all .2s}
-        .btn-primary{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;width:100%}
+        .btn-primary{display:block;width:100%;padding:11px;background:linear-gradient(135deg,var(--accent),var(--accent2));border:none;border-radius:9px;color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;text-align:center}
         .msg-row{padding:12px 0;border-bottom:1px solid rgba(31,45,69,.5);display:flex;gap:12px}
         .msg-row:last-child{border-bottom:none}
-        .msg-ico{font-size:20px;flex-shrink:0}
+        .msg-ico{font-size:20px;flex-shrink:0;margin-top:2px}
         .msg-title{font-weight:700;font-size:13px;margin-bottom:3px}
-        .msg-meta{font-size:12px;color:var(--muted);margin-bottom:4px}
-        .msg-body{font-size:13px;color:rgba(226,232,240,.7);background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:8px;padding:8px 10px}
+        .msg-meta{font-size:12px;color:var(--muted);margin-bottom:5px}
+        .msg-body{font-size:13px;color:rgba(226,232,240,.75);background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:8px;padding:8px 10px;line-height:1.5}
         .msg-stato{font-size:11px;margin-top:5px}
         .letto{color:#6ee7b7}.non-letto{color:var(--yellow)}
         .unread-border{border-left:3px solid var(--accent);padding-left:10px}
-        .pag a,.pag span{display:inline-flex;align-items:center;padding:6px 11px;border-radius:7px;font-size:12px;text-decoration:none;border:1px solid var(--border);color:var(--muted);margin:2px;transition:all .2s}
-        .pag a:hover{color:var(--text);border-color:var(--accent)}
         @media(max-width:768px){.sidebar{display:none}.main{margin-left:0;padding:20px 16px}}
     </style>
 </head>
@@ -60,9 +57,14 @@
     <div class="sidebar-footer">
         <div class="user-info">
             <div class="avatar">{{ strtoupper(substr($medico->nome,0,1)) }}</div>
-            <div><div class="user-name">{{ $medico->nome }} {{ $medico->cognome }}</div><div class="user-role">👨‍⚕️ Medico</div></div>
+            <div>
+                <div class="user-name">{{ $medico->nome }} {{ $medico->cognome }}</div>
+                <div class="user-role">👨‍⚕️ Medico</div>
+            </div>
         </div>
-        <form method="POST" action="{{ route('logout') }}">@csrf<button type="submit" class="btn-logout">🚪 Esci</button></form>
+        <form method="POST" action="{{ route('logout') }}">@csrf
+            <button type="submit" class="btn-logout">🚪 Esci</button>
+        </form>
     </div>
 </aside>
 
@@ -77,7 +79,7 @@
     @if(session('success'))<div class="alert alert-success">{{ session('success') }}</div>@endif
     @if(session('error'))<div class="alert alert-error">{{ session('error') }}</div>@endif
 
-    <div style="display:grid;grid-template-columns:380px 1fr;gap:24px;align-items:start;">
+    <div style="display:grid;grid-template-columns:360px 1fr;gap:24px;align-items:start;">
 
         {{-- FORM INVIO --}}
         <div class="card" style="position:sticky;top:24px;">
@@ -89,7 +91,7 @@
                     <select name="id_utente" required>
                         <option value="">— Seleziona —</option>
                         @if($pazienti->count())
-                        <optgroup label="🧑 Pazienti seguiti">
+                        <optgroup label="🧑 I miei pazienti">
                             @foreach($pazienti as $p)
                                 <option value="{{ $p->utente->id }}">{{ $p->utente->cognome }} {{ $p->utente->nome }}</option>
                             @endforeach
@@ -112,7 +114,7 @@
                     </select>
                 </div>
                 <div class="field">
-                    <label>Tipo *</label>
+                    <label>Tipo</label>
                     <select name="tipo">
                         <option value="messaggio">💬 Messaggio</option>
                         <option value="info">ℹ️ Info</option>
@@ -128,13 +130,12 @@
                     <label>Messaggio *</label>
                     <textarea name="messaggio" required placeholder="Scrivi qui..."></textarea>
                 </div>
-                <button type="submit" class="btn btn-primary">📤 Invia</button>
+                <button type="submit" class="btn-primary">📤 Invia</button>
             </form>
         </div>
 
-        {{-- COLONNA MESSAGGI --}}
+        {{-- MESSAGGI --}}
         <div>
-
             {{-- RICEVUTI --}}
             <div class="card">
                 <div class="card-title">📥 Ricevuti ({{ $ricevuti->total() }})</div>
@@ -152,15 +153,15 @@
                         </div>
                         <div class="msg-meta">Da: <strong>{{ $mitt ? $mitt->cognome.' '.$mitt->nome.' ('.ucfirst($mitt->ruolo).')' : 'Sistema' }}</strong></div>
                         <div class="msg-body">{{ $n->messaggio }}</div>
-                        <div class="msg-stato {{ $n->letta ? 'letto' : 'non-letto' }}">
-                            {{ $n->letta ? '✓ Letto' : '● Nuovo' }}
+                        <div class="msg-stato">
+                            <span class="{{ $n->letta ? 'letto' : 'non-letto' }}">{{ $n->letta ? '✓ Letto' : '● Nuovo' }}</span>
                         </div>
                     </div>
                 </div>
                 @empty
                 <div style="text-align:center;color:var(--muted);padding:24px;font-size:13px;">Nessun messaggio ricevuto.</div>
                 @endforelse
-                <div class="pag" style="margin-top:12px;">{{ $ricevuti->links('pagination::simple-tailwind') }}</div>
+                <div style="margin-top:12px;">{{ $ricevuti->links('pagination::simple-tailwind') }}</div>
             </div>
 
             {{-- INVIATI --}}
@@ -179,22 +180,17 @@
                             <div style="font-size:11px;color:var(--muted)">{{ \Carbon\Carbon::parse($n->data_invio)->format('d/m H:i') }}</div>
                         </div>
                         <div class="msg-meta">A: <strong>{{ $dest ? $dest->cognome.' '.$dest->nome.' ('.ucfirst($dest->ruolo).')' : '?' }}</strong></div>
-                        <div class="msg-body" style="font-size:12px;color:rgba(226,232,240,.6)">{{ \Illuminate\Support\Str::limit($n->messaggio, 120) }}</div>
+                        <div class="msg-body" style="color:rgba(226,232,240,.6)">{{ \Illuminate\Support\Str::limit($n->messaggio,120) }}</div>
                         <div class="msg-stato">
-                            @if($n->letta)
-                                <span class="letto">✓ Letto{{ isset($n->letto_at) && $n->letto_at ? ' il '.\Carbon\Carbon::parse($n->letto_at)->format('d/m H:i') : '' }}</span>
-                            @else
-                                <span class="non-letto">● In attesa di lettura</span>
-                            @endif
+                            <span class="{{ $n->letta ? 'letto' : 'non-letto' }}">{{ $n->letta ? '✓ Letto' : '● In attesa di lettura' }}</span>
                         </div>
                     </div>
                 </div>
                 @empty
                 <div style="text-align:center;color:var(--muted);padding:24px;font-size:13px;">Nessun messaggio inviato.</div>
                 @endforelse
-                <div class="pag" style="margin-top:12px;">{{ $inviati->links('pagination::simple-tailwind') }}</div>
+                <div style="margin-top:12px;">{{ $inviati->links('pagination::simple-tailwind') }}</div>
             </div>
-
         </div>
     </div>
 </main>

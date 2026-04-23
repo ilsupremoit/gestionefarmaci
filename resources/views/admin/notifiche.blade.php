@@ -49,7 +49,7 @@
                 </div>
                 <div class="field">
                     <label>Tipo *</label>
-                    <select name="tipo" required>
+                    <select name="tipo">
                         <option value="info">ℹ️ Informazione</option>
                         <option value="promemoria">⏰ Promemoria</option>
                         <option value="allarme">🚨 Urgente</option>
@@ -68,38 +68,32 @@
             </form>
         </div>
 
-        {{-- COLONNA DESTRA: inviati + ricevuti --}}
+        {{-- COLONNA DESTRA --}}
         <div>
 
-            {{-- MESSAGGI RICEVUTI --}}
+            {{-- RICEVUTI --}}
             <div class="card" style="margin-bottom:20px;">
-                <div class="card-title">
-                    📥 Messaggi ricevuti ({{ $ricevuti->total() }})
-                </div>
+                <div class="card-title">📥 Messaggi ricevuti ({{ $ricevuti->total() }})</div>
                 @forelse($ricevuti as $n)
                 @php
                     $mitt = \App\Models\User::find($n->id_mittente);
-                    $tipoIco = match($n->tipo ?? 'info') {
-                        'allarme'  => '🚨', 'promemoria' => '⏰',
-                        'messaggio'=> '💬', default      => 'ℹ️',
-                    };
+                    $ico  = match($n->tipo ?? 'info') { 'allarme'=>'🚨','promemoria'=>'⏰','messaggio'=>'💬',default=>'ℹ️' };
                 @endphp
                 <div style="padding:12px 0;border-bottom:1px solid var(--border);display:flex;gap:12px;">
-                    <div style="font-size:22px;flex-shrink:0;">{{ $tipoIco }}</div>
+                    <div style="font-size:22px;flex-shrink:0;">{{ $ico }}</div>
                     <div style="flex:1;min-width:0;">
                         <div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:4px;">
                             <div style="font-weight:700;font-size:13px;">{{ $n->titolo }}</div>
-                            <div style="font-size:11px;color:var(--muted);flex-shrink:0;">{{ \Carbon\Carbon::parse($n->data_invio)->format('d/m H:i') }}</div>
+                            <div style="font-size:11px;color:var(--muted);">{{ \Carbon\Carbon::parse($n->data_invio)->format('d/m H:i') }}</div>
                         </div>
                         <div style="font-size:12px;color:var(--muted);margin-bottom:4px;">
                             Da: <strong>{{ $mitt ? $mitt->cognome.' '.$mitt->nome.' ('.ucfirst($mitt->ruolo).')' : 'Sistema' }}</strong>
                         </div>
-                        <div style="font-size:13px;color:#334155;background:#f8fafc;border:1px solid var(--border);border-radius:8px;padding:8px 10px;">
+                        <div style="font-size:13px;background:#f8fafc;border:1px solid var(--border);border-radius:8px;padding:8px 10px;">
                             {{ $n->messaggio }}
                         </div>
-                        {{-- Conferma lettura (sempre mostrata lato admin) --}}
                         <div style="margin-top:5px;font-size:11px;color:{{ $n->letta ? '#15803d' : 'var(--muted)' }};">
-                            {{ $n->letta ? '✓ Letto' . ($n->letto_at ? ' il '.\Carbon\Carbon::parse($n->letto_at)->format('d/m H:i') : '') : '● Non letto' }}
+                            {{ $n->letta ? '✓ Letto' : '● Non letto' }}
                         </div>
                     </div>
                 </div>
@@ -109,35 +103,27 @@
                 <div style="margin-top:12px;">{{ $ricevuti->links('pagination::simple-tailwind') }}</div>
             </div>
 
-            {{-- MESSAGGI INVIATI --}}
+            {{-- INVIATI --}}
             <div class="card">
                 <div class="card-title">📤 Messaggi inviati ({{ $inviati->total() }})</div>
                 @forelse($inviati as $n)
                 @php
                     $dest = \App\Models\User::find($n->id_utente);
-                    $tipoIco = match($n->tipo ?? 'info') {
-                        'allarme'  => '🚨', 'promemoria' => '⏰',
-                        'messaggio'=> '💬', default      => 'ℹ️',
-                    };
+                    $ico  = match($n->tipo ?? 'info') { 'allarme'=>'🚨','promemoria'=>'⏰','messaggio'=>'💬',default=>'ℹ️' };
                 @endphp
                 <div style="padding:12px 0;border-bottom:1px solid var(--border);display:flex;gap:12px;">
-                    <div style="font-size:22px;flex-shrink:0;">{{ $tipoIco }}</div>
+                    <div style="font-size:22px;flex-shrink:0;">{{ $ico }}</div>
                     <div style="flex:1;min-width:0;">
                         <div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:4px;">
                             <div style="font-weight:700;font-size:13px;">{{ $n->titolo }}</div>
-                            <div style="font-size:11px;color:var(--muted);flex-shrink:0;">{{ \Carbon\Carbon::parse($n->data_invio)->format('d/m H:i') }}</div>
+                            <div style="font-size:11px;color:var(--muted);">{{ \Carbon\Carbon::parse($n->data_invio)->format('d/m H:i') }}</div>
                         </div>
                         <div style="font-size:12px;color:var(--muted);margin-bottom:4px;">
                             A: <strong>{{ $dest ? $dest->cognome.' '.$dest->nome.' ('.ucfirst($dest->ruolo).')' : '?' }}</strong>
                         </div>
                         <div style="font-size:12px;color:#475569;">{{ \Illuminate\Support\Str::limit($n->messaggio, 120) }}</div>
-                        {{-- Stato lettura con timestamp --}}
                         <div style="margin-top:5px;font-size:11px;color:{{ $n->letta ? '#15803d' : 'var(--muted)' }};">
-                            @if($n->letta)
-                                ✓ Letto{{ isset($n->letto_at) && $n->letto_at ? ' il '.\Carbon\Carbon::parse($n->letto_at)->format('d/m/Y H:i') : '' }}
-                            @else
-                                ● In attesa di lettura
-                            @endif
+                            {{ $n->letta ? '✓ Letto' : '● In attesa di lettura' }}
                         </div>
                     </div>
                 </div>
@@ -146,7 +132,6 @@
                 @endforelse
                 <div style="margin-top:12px;">{{ $inviati->links('pagination::simple-tailwind') }}</div>
             </div>
-
         </div>
     </div>
 </main>

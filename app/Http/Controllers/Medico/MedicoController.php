@@ -36,11 +36,11 @@ class MedicoController extends Controller
             ->orderByDesc('data_invio')
             ->paginate(15, ['*'], 'ricevuti');
 
-        // Segna come letti
+        // Segna come letti (senza letto_at che non esiste nel DB attuale)
         DB::table('notifiche')
             ->where('id_utente', $medico->id)
             ->where('letta', false)
-            ->update(['letta' => true, 'letto_at' => now()]);
+            ->update(['letta' => true]);
 
         return view('medico.notifiche', compact('medico', 'inviati', 'ricevuti', 'pazienti', 'medici', 'adminList'));
     }

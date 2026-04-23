@@ -151,3 +151,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::get('/notifiche',  [AdminController::class, 'notifiche'])->name('notifiche');
     Route::post('/notifiche', [AdminController::class, 'inviaNotifica'])->name('notifiche.invia');
 });
+
+
+
+
