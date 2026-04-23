@@ -1,4 +1,3 @@
-{{-- resources/views/paziente/dashboard.blade.php --}}
 @php
     use Carbon\Carbon;
     use Illuminate\Support\Facades\DB;
@@ -12,6 +11,7 @@
     <!DOCTYPE html>
 <html lang="it">
 <head>
+    @vite('resources/js/app.js')
     <meta charset="UTF-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>PillMate — Dashboard</title>
@@ -25,13 +25,15 @@
 
     <div class="page-header">
         <div>
-            <h1>Ciao, {{ $utente->nome }} 👋</h1>
+            <h1>Ciao, {{ $utente->nome }}</h1>
             <p>Il piano terapeutico di oggi — {{ now()->isoFormat('dddd D MMMM Y') }}</p>
         </div>
 
         @if($paziente && $medici->count())
             <div class="medico-badge">
-                <span class="medico-ico">👨‍⚕️</span>
+                <span class="medico-ico">
+                    <i data-lucide="stethoscope"></i>
+                </span>
                 <div>
                     <div style="font-size:11px;color:var(--muted);">Medico curante</div>
                     <div style="font-size:13px;font-weight:600;">
@@ -42,12 +44,13 @@
         @endif
     </div>
 
-    {{-- Stats --}}
     <div class="stats">
         <div class="stat-card">
             <div class="stat-top">
                 <span class="stat-label">Terapie attive</span>
-                <div class="stat-ico blue">💊</div>
+                <div class="stat-ico blue">
+                    <i data-lucide="pill"></i>
+                </div>
             </div>
             <div class="stat-value {{ $terapieAttive->count() > 0 ? 'c-blue' : '' }}">
                 {{ $terapieAttive->count() }}
@@ -58,7 +61,9 @@
         <div class="stat-card">
             <div class="stat-top">
                 <span class="stat-label">Prese oggi</span>
-                <div class="stat-ico green">✅</div>
+                <div class="stat-ico green">
+                    <i data-lucide="check-circle-2"></i>
+                </div>
             </div>
             <div class="stat-value {{ $statOggi['prese'] > 0 ? 'c-green' : '' }}">
                 {{ $statOggi['prese'] }}
@@ -69,7 +74,9 @@
         <div class="stat-card">
             <div class="stat-top">
                 <span class="stat-label">Da assumere</span>
-                <div class="stat-ico yellow">⏳</div>
+                <div class="stat-ico yellow">
+                    <i data-lucide="clock-3"></i>
+                </div>
             </div>
             <div class="stat-value {{ $statOggi['attesa'] > 0 ? 'c-yellow' : '' }}">
                 {{ $statOggi['attesa'] }}
@@ -80,7 +87,9 @@
         <div class="stat-card">
             <div class="stat-top">
                 <span class="stat-label">Dispositivi</span>
-                <div class="stat-ico teal">📡</div>
+                <div class="stat-ico teal">
+                    <i data-lucide="radio"></i>
+                </div>
             </div>
             <div class="stat-value {{ $numDispositivi > 0 ? 'c-teal' : '' }}">
                 {{ $numDispositivi }}
@@ -89,19 +98,18 @@
         </div>
     </div>
 
-    {{-- Avviso dosi saltate --}}
     @if($statOggi['saltate'] > 0)
         <div class="alert-banner">
-            ⚠️ <strong>Attenzione:</strong> {{ $statOggi['saltate'] }} dose/i risultano saltate oggi. Contattare il medico se necessario.
+            <strong>Attenzione:</strong> {{ $statOggi['saltate'] }} dose/i risultano saltate oggi. Contattare il medico se necessario.
         </div>
     @endif
 
     <div class="content-grid">
 
-        {{-- Terapie attive --}}
         <div class="card">
             <div class="card-title">
-                📋 Terapie attive
+                <i data-lucide="clipboard-list"></i>
+                Terapie attive
                 <a href="{{ route('paziente.terapie') }}" class="card-link">Vedi tutto →</a>
             </div>
 
@@ -121,8 +129,9 @@
                         </div>
 
                         @if($t->istruzioni)
-                            <div style="font-size:11px;color:var(--muted);margin-top:3px;">
-                                📝 {{ Str::limit($t->istruzioni, 60) }}
+                            <div style="font-size:11px;color:var(--muted);margin-top:3px;display:flex;align-items:center;gap:5px;">
+                                <i data-lucide="notebook-pen" style="width:13px;height:13px;"></i>
+                                {{ Str::limit($t->istruzioni, 60) }}
                             </div>
                         @endif
                     </div>
@@ -134,18 +143,28 @@
             @endforelse
         </div>
 
-        {{-- Assunzioni di oggi --}}
         <div class="card">
-            <div class="card-title">📅 Oggi — {{ now()->format('d/m/Y') }}</div>
+            <div class="card-title">
+                <i data-lucide="calendar"></i>
+                Oggi — {{ now()->format('d/m/Y') }}
+            </div>
 
             @forelse($assunzioniOggi as $a)
                 @php
                     $farm = $a->somministrazione->terapia->farmaco ?? null;
+                    $isOk = in_array($a->stato,['assunta','erogata']);
+                    $isKo = in_array($a->stato,['saltata','non_ritirata']);
                 @endphp
 
                 <div class="assunzione-row">
-                    <div class="assunzione-ico" style="{{ in_array($a->stato,['assunta','erogata']) ? 'background:rgba(16,185,129,.15)' : (in_array($a->stato,['saltata','non_ritirata']) ? 'background:rgba(239,68,68,.15)' : 'background:rgba(245,158,11,.12)') }}">
-                        {{ in_array($a->stato,['assunta','erogata']) ? '✅' : (in_array($a->stato,['saltata','non_ritirata']) ? '❌' : '⏳') }}
+                    <div class="assunzione-ico" style="{{ $isOk ? 'background:#ecfdf5;color:var(--green);' : ($isKo ? 'background:#fef2f2;color:var(--red);' : 'background:#fff7ed;color:var(--yellow);') }}">
+                        @if($isOk)
+                            <i data-lucide="check-circle-2"></i>
+                        @elseif($isKo)
+                            <i data-lucide="circle-x"></i>
+                        @else
+                            <i data-lucide="clock-3"></i>
+                        @endif
                     </div>
 
                     <div class="assunzione-info">
@@ -153,7 +172,7 @@
                         <div class="assunzione-time">
                             {{ substr($a->somministrazione->ora ?? '--', 0, 5) }}
                             @if($a->apertura_forzata)
-                                · <span style="color:var(--accent);font-size:10px;">🔓 Forzata</span>
+                                · <span style="color:var(--accent);font-size:10px;display:inline-flex;align-items:center;gap:3px;"><i data-lucide="unlock" style="width:11px;height:11px;"></i> Forzata</span>
                             @endif
                         </div>
                     </div>
@@ -165,16 +184,16 @@
             @endforelse
         </div>
 
-        {{-- Notifiche --}}
         <div class="card">
             <div class="card-title">
-                🔔 Ultime notifiche
+                <i data-lucide="bell"></i>
+                Ultime notifiche
                 <a href="{{ route('paziente.notifiche') }}" class="card-link">Vedi tutto →</a>
             </div>
 
             @forelse($notifiche as $n)
-                <div style="padding:10px 0;border-bottom:1px solid rgba(31,45,69,.5);">
-                    <div style="font-size:13px;font-weight:500;">
+                <div style="padding:10px 0;border-bottom:1px solid var(--border);">
+                    <div style="font-size:13px;font-weight:500;color:var(--text);">
                         {{ $n->titolo ?? 'Notifica' }}
                     </div>
 
@@ -199,14 +218,14 @@
 @php
     function statoLbl(string $s): string {
         return match($s) {
-            'assunta' => '✅ Presa',
-            'erogata' => '💊 Erogata',
-            'saltata' => '❌ Saltata',
-            'non_ritirata' => '⏸ Non ritirata',
-            'in_attesa' => '⏳ In attesa',
-            'ritardo' => '⚠️ Ritardo',
-            'allarme_attivo' => '🔔 Allarme',
-            'apertura_forzata' => '🔓 Forzata',
+            'assunta' => 'Presa',
+            'erogata' => 'Erogata',
+            'saltata' => 'Saltata',
+            'non_ritirata' => 'Non ritirata',
+            'in_attesa' => 'In attesa',
+            'ritardo' => 'Ritardo',
+            'allarme_attivo' => 'Allarme',
+            'apertura_forzata' => 'Forzata',
             default => ucfirst($s),
         };
     }
