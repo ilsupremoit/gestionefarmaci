@@ -3,30 +3,44 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Assunzione extends Model
 {
-    protected $table   = 'assunzioni';
-    public $timestamps = false;
+    protected $table    = 'assunzioni';
+    public    $timestamps = false;
 
     protected $fillable = [
         'id_somministrazione',
+        'id_dispositivo',
         'data_prevista',
         'data_erogazione',
         'data_conferma',
         'stato',
         'confermata_da',
+        'allarme_inviato',
+        'data_allarme',
+        'apertura_forzata',
+        'data_apertura_forzata',
+        'note_evento',
+        'scomparto_numero',
+        // nuovi
+        'forzata_medico',
+        'id_medico_forzante',
+        'quantita_erogata',
     ];
 
     protected $casts = [
-        'data_prevista'  => 'datetime',
-        'data_erogazione'=> 'datetime',
-        'data_conferma'  => 'datetime',
+        'data_prevista'         => 'datetime',
+        'data_erogazione'       => 'datetime',
+        'data_conferma'         => 'datetime',
+        'data_allarme'          => 'datetime',
+        'data_apertura_forzata' => 'datetime',
+        'allarme_inviato'       => 'boolean',
+        'apertura_forzata'      => 'boolean',
+        'forzata_medico'        => 'boolean',
     ];
 
-    public function somministrazione(): BelongsTo
-    {
-        return $this->belongsTo(Somministrazione::class, 'id_somministrazione');
-    }
+    public function somministrazione() { return $this->belongsTo(Somministrazione::class, 'id_somministrazione'); }
+    public function dispositivo()      { return $this->belongsTo(Dispositivo::class, 'id_dispositivo'); }
+    public function medicoForzante()   { return $this->belongsTo(User::class, 'id_medico_forzante'); }
 }

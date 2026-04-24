@@ -71,12 +71,16 @@ Route::middleware(['auth', 'role:medico'])->prefix('medico')->name('medico.')->g
     Route::get('/pazienti',      [MedicoPazienteController::class, 'index'])->name('pazienti.index');
     Route::get('/pazienti/crea', [MedicoPazienteController::class, 'create'])->name('pazienti.create');
     Route::post('/pazienti',     [MedicoPazienteController::class, 'store'])->name('pazienti.store');
-    Route::get('/pazienti/{paziente}', [MedicoPazienteDetailController::class, 'show'])->name('pazienti.show');
+    Route::get('/pazienti/{paziente}',          [MedicoPazienteDetailController::class, 'show'])->name('pazienti.show');
+    Route::get('/pazienti/{paziente}/storico/{tipo}', [MedicoPazienteDetailController::class, 'storico'])->name('pazienti.storico');
 
     // Terapie
-    Route::post('/pazienti/{paziente}/terapie', [MedicoPazienteDetailController::class, 'storeTerapia'])->name('pazienti.terapie.store');
+    Route::post('/pazienti/{paziente}/terapie',             [MedicoPazienteDetailController::class, 'storeTerapia'])->name('pazienti.terapie.store');
+    Route::put('/pazienti/{paziente}/terapie/{terapia}',    [MedicoPazienteDetailController::class, 'updateTerapia'])->name('pazienti.terapie.update');
     Route::delete('/pazienti/{paziente}/terapie/{terapia}', [MedicoPazienteDetailController::class, 'destroyTerapia'])->name('pazienti.terapie.destroy');
-    Route::get('/pazienti/{paziente}/storico/{tipo?}', [MedicoPazienteDetailController::class, 'storico'])->name('pazienti.storico');
+
+    // Storico assunzioni per tipo
+    Route::get('/pazienti/{paziente}/storico/{tipo}',       [MedicoPazienteDetailController::class, 'storico'])->name('pazienti.storico');
 
     // Comandi IoT rapidi (dalla pagina paziente)
     Route::post('/pazienti/{paziente}/eroga',   [MedicoPazienteDetailController::class, 'erogazioneForzata'])->name('pazienti.eroga');
