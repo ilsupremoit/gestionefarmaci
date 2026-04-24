@@ -84,6 +84,13 @@
         </div>
     @endif
 
+    @if(session('warning'))
+        <div class="alert alert-warning" style="background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:12px 16px;display:flex;align-items:center;gap:10px;font-size:13px;color:#92400e;margin-bottom:20px;">
+            <i data-lucide="triangle-alert"></i>
+            {{ session('warning') }}
+        </div>
+    @endif
+
     <div class="page-header">
         <div style="display:flex;align-items:center;gap:16px;">
             <div class="header-device-icon">
@@ -262,6 +269,7 @@
 
     @if($storicoTelemetria->count())
         <div class="card">
+            <div class="card-title">
                 <i data-lucide="chart-column"></i>
                 Storico telemetria (ultimi {{ $storicoTelemetria->count() }} punti)
             </div>
@@ -290,24 +298,23 @@
             </div>
         </div>
     @endif
-</main>
 
-{{-- ══════════════════════════════════════════════════════════
-     WIDGET SCOMPARTI CAROSELLO
-══════════════════════════════════════════════════════════ --}}
+    {{-- ══════════════════════════════════════════════════════════
+         WIDGET SCOMPARTI CAROSELLO
+    ══════════════════════════════════════════════════════════ --}}
 
-<style>
+    <style>
 /* Scomparti widget */
 .scomparti-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-top:16px; }
-.scomp-card { border:2px solid var(--border); border-radius:14px; padding:14px; text-align:center; transition:all .2s; position:relative; background:rgba(255,255,255,.02); }
+.scomp-card { border:2px solid var(--border); border-radius:14px; padding:14px; text-align:center; transition:all .2s; position:relative; background:var(--bg); }
 .scomp-card:hover { border-color:var(--accent); }
-.scomp-card.pieno { border-color:rgba(16,185,129,.4); background:rgba(16,185,129,.06); }
+.scomp-card.pieno { border-color:rgba(5,150,105,.5); background:rgba(5,150,105,.07); }
 .scomp-card.vuoto { border-color:var(--border); opacity:.7; }
 .scomp-numero { font-family:'Syne',sans-serif; font-size:22px; font-weight:800; color:var(--accent); margin-bottom:6px; }
 .scomp-farmaco { font-size:13px; font-weight:600; margin-bottom:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .scomp-dose { font-size:11px; color:var(--muted); }
 .scomp-stato { margin-top:8px; display:inline-flex; align-items:center; gap:4px; font-size:11px; font-weight:600; padding:2px 8px; border-radius:10px; }
-.scomp-stato.pieno { background:rgba(16,185,129,.12); color:#6ee7b7; border:1px solid rgba(16,185,129,.25); }
+.scomp-stato.pieno { background:rgba(5,150,105,.12); color:#065f46; border:1px solid rgba(5,150,105,.3); }
 .scomp-stato.vuoto { background:rgba(100,116,139,.1); color:var(--muted); border:1px solid var(--border); }
 .scomp-terapia { font-size:10px; color:var(--accent2); margin-top:4px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .scomp-edit-btn { margin-top:10px; padding:5px 10px; background:rgba(59,130,246,.1); border:1px solid rgba(59,130,246,.25); border-radius:7px; color:var(--accent); font-size:11px; cursor:pointer; font-family:inherit; transition:all .2s; width:100%; }
@@ -315,12 +322,12 @@
 /* Modale */
 .modale-overlay { position:fixed; inset:0; background:rgba(0,0,0,.6); z-index:9998; display:none; align-items:center; justify-content:center; }
 .modale-overlay.open { display:flex; }
-.modale-box { background:#1a2535; border:1px solid var(--border); border-radius:16px; padding:28px; width:100%; max-width:480px; box-shadow:0 20px 60px rgba(0,0,0,.4); }
+.modale-box { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:28px; width:100%; max-width:480px; box-shadow:var(--shadow-md); }
 .modale-title { font-family:'Syne',sans-serif; font-size:17px; font-weight:700; margin-bottom:20px; display:flex; align-items:center; gap:10px; }
 .modale-label { font-size:11px; text-transform:uppercase; letter-spacing:.6px; color:var(--muted); font-weight:700; display:block; margin-bottom:6px; }
-.modale-select { width:100%; background:#0f172a; border:1px solid var(--border); color:var(--text); padding:10px 13px; border-radius:9px; font:inherit; font-size:13px; outline:none; margin-bottom:14px; }
+.modale-select { width:100%; background:var(--bg); border:1px solid var(--border); color:var(--text); padding:10px 13px; border-radius:9px; font:inherit; font-size:13px; outline:none; margin-bottom:14px; }
 .modale-select:focus { border-color:var(--accent); }
-.modale-select option { background:#111827; }
+.modale-select option { background:var(--surface); }
 .modale-row { display:flex; gap:10px; margin-top:6px; }
 .modale-btn { flex:1; padding:11px; border-radius:9px; font-family:inherit; font-size:13px; font-weight:700; cursor:pointer; border:none; transition:all .2s; }
 .modale-btn.primary { background:linear-gradient(135deg,var(--accent),var(--accent2)); color:#fff; }
@@ -328,11 +335,10 @@
 .modale-info { font-size:11px; color:var(--muted); background:rgba(59,130,246,.06); border:1px solid rgba(59,130,246,.15); border-radius:8px; padding:8px 10px; margin-bottom:14px; }
 </style>
 
-{{-- Widget Scomparti (fuori main, in posizione fissa non serve, rimane nel flusso) --}}
-<div id="sectionScomparti" style="margin-left:240px;padding:0 40px 40px;">
-    <div style="background:#111827;border:1px solid var(--border);border-radius:14px;padding:22px;margin-bottom:20px;">
+    <div id="sectionScomparti">
+    <div class="card" style="margin-bottom:20px;">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;flex-wrap:wrap;gap:10px;">
-            <div style="display:flex;align-items:center;gap:8px;font-family:'Syne',sans-serif;font-size:15px;font-weight:700;">
+            <div class="card-title" style="margin-bottom:0;">
                 <i data-lucide="layout-grid"></i> Gestione scomparti carosello (8 slot)
             </div>
             <div style="display:flex;gap:8px;">
@@ -365,10 +371,10 @@
             @endfor
         </div>
     </div>
-</div>
+    </div>
 
-{{-- MODALE: Editor singolo scomparto --}}
-<div class="modale-overlay" id="modaleEditor">
+        {{-- MODALE: Editor singolo scomparto --}}
+    <div class="modale-overlay" id="modaleEditor">
     <div class="modale-box">
         <div class="modale-title"><i data-lucide="package-2"></i> Configura scomparto <span id="modaleEditorNum" style="color:var(--accent);"></span></div>
 
@@ -401,10 +407,10 @@
             <button class="modale-btn cancel" onclick="chiudiModale('modaleEditor')">Annulla</button>
         </div>
     </div>
-</div>
+    </div>
 
-{{-- MODALE: Erogazione forzata (seleziona scomparto) --}}
-<div class="modale-overlay" id="modaleEroga">
+    {{-- MODALE: Erogazione forzata (seleziona scomparto) --}}
+    <div class="modale-overlay" id="modaleEroga">
     <div class="modale-box">
         <div class="modale-title"><i data-lucide="pill"></i> Erogazione forzata</div>
         <div class="modale-info">⚠️ Il dispositivo ruoterà il carosello allo scomparto selezionato ed erogherà la pillola immediatamente.</div>
@@ -425,10 +431,10 @@
             </div>
         </form>
     </div>
-</div>
+    </div>
 
-{{-- MODALE: Attiva allarme (seleziona scomparto) --}}
-<div class="modale-overlay" id="modaleAllarme">
+    {{-- MODALE: Attiva allarme (seleziona scomparto) --}}
+    <div class="modale-overlay" id="modaleAllarme">
     <div class="modale-box">
         <div class="modale-title"><i data-lucide="bell-ring"></i> Attiva allarme</div>
         <div class="modale-info">🔔 L'ESP32 suonerà ogni 5 minuti finché il paziente non preme il bottone fisico o il sensore PIR rileva movimento.</div>
@@ -446,10 +452,10 @@
             <button class="modale-btn cancel" onclick="chiudiModale('modaleAllarme')">Annulla</button>
         </div>
     </div>
-</div>
+    </div>
 
-{{-- FORM nascosto per salvataggio scomparti --}}
-<form id="formScomparti" method="POST" action="{{ route('medico.pazienti.dispositivi.scomparti', [$paziente->id, $dispositivo->id]) }}" style="display:none;">
+    {{-- FORM nascosto per salvataggio scomparti --}}
+    <form id="formScomparti" method="POST" action="{{ route('medico.pazienti.dispositivi.scomparti', [$paziente->id, $dispositivo->id]) }}" style="display:none;">
     @csrf
     @for($n = 1; $n <= 8; $n++)
     @php $s = $scomparti[$n]; @endphp
@@ -459,11 +465,11 @@
     <input type="hidden" name="scomparti[{{ $n - 1 }}][pieno]"            id="s{{ $n }}_pieno" value="{{ ($s['quantita'] ?? 0) > 0 ? '1' : '0' }}"/>
     <input type="hidden" name="scomparti[{{ $n - 1 }}][quantita]"         id="s{{ $n }}_quantita" value="{{ $s['quantita'] ?? 0 }}"/>
     @endfor
-</form>
+    </form>
 
-<div class="toast" id="toast"></div>
+    <div class="toast" id="toast"></div>
 
-<script>
+    <script>
     const PAZIENTE_ID   = {{ $paziente->id }};
     const DISPOSITIVO_ID = {{ $dispositivo->id }};
     const CSRF          = document.querySelector('meta[name="csrf-token"]').content;
@@ -549,6 +555,13 @@
     }
 
     setInterval(pollTelemetria, 15000);
+
+    // Inizializza Lucide icons dopo il DOM completo
+    document.addEventListener('DOMContentLoaded', () => {
+        if (window.lucide) window.lucide.createIcons();
+    });
+    // Fallback se già caricato
+    if (document.readyState !== 'loading' && window.lucide) window.lucide.createIcons();
 
     function showToast(msg, type = 'success') {
         const t = document.getElementById('toast');
@@ -663,6 +676,7 @@
             } catch(e) { showToast('Errore di rete', 'error'); }
         }
     }
-</script>
+    </script>
+</main>
 </body>
 </html>

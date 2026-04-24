@@ -689,3 +689,26 @@ code {
     .main { margin-left:0; padding:20px 16px; }
     .form-row { grid-template-columns: 1fr; }
 }
+
+/* ── Pill stat cliccabili ───────────────────────────────── */
+.stat-pill.orange {
+    background: linear-gradient(135deg, #fff7ed, #ffedd5);
+    border-color: #fed7aa;
+    color: #9a3412;
+}
+.stat-link {
+    text-decoration: none;
+    cursor: pointer;
+    transition: transform .15s, box-shadow .15s;
+}
+.stat-link:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+.stat-hint {
+    font-size: 10px;
+    color: var(--muted);
+    margin-top: 4px;
+    opacity: .8;
+}
+.stat-link:hover .stat-hint { opacity: 1; color: var(--accent); }

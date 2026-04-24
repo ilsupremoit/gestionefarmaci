@@ -9,6 +9,7 @@ use App\Models\ScompartoDispositivo;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use PhpMqtt\Client\Facades\MQTT;
+use Throwable;
 
 class MqttListen extends Command
 {
@@ -17,97 +18,128 @@ class MqttListen extends Command
 
     public function handle(): void
     {
-        $this->info('[MQTT] Listener avviato. In ascolto su pillmate/+/...');
+        while (true) {
+            try {
+                $this->info('[MQTT] Listener avviato. In ascolto su pillmate/+/...');
 
-        $mqtt = MQTT::connection();
-
-        $mqtt->subscribe('pillmate/+/eventi', function (string $topic, string $raw) {
-            $serial = $this->estraiSeriale($topic);
-            $payload = json_decode($raw, true);
-            if (!is_array($payload) || !isset($payload['azione'])) {
-                return;
-            }
-
-            $dispositivo = Dispositivo::where('codice_seriale', $serial)->first();
-            if (!$dispositivo) {
-                $this->warn("[MQTT] Dispositivo sconosciuto: {$serial}");
-                return;
-            }
-
-            $this->salvaEventoRaw($dispositivo, $payload, $topic);
-
-            match ($payload['azione']) {
-                'pillola_erogata' => $this->gestisciErogazione($dispositivo, $payload),
-                'mappa_scomparti' => $this->sincronizzaMappa($dispositivo, $payload),
-                'richiesta_ricarica' => $this->gestisciRichiestaRicarica($dispositivo, $payload),
-                'errore_erogazione' => $this->gestisciErroreFarmaco($dispositivo, $payload),
-                default => $this->line("[MQTT] Azione non gestita: {$payload['azione']}"),
-            };
-        }, 1);
-
-        $mqtt->subscribe('pillmate/+/telemetria', function (string $topic, string $raw) {
-            $serial = $this->estraiSeriale($topic);
-            $payload = json_decode($raw, true);
-            if (!is_array($payload)) {
-                return;
-            }
-
-            $dispositivo = Dispositivo::where('codice_seriale', $serial)->first();
-            if (!$dispositivo) {
-                return;
-            }
-
-            $update = [
-                'ultima_connessione' => now(),
-                'ultimo_payload_at' => now(),
-            ];
-
-            foreach (['temperatura', 'umidita', 'wifi_rssi'] as $k) {
-                if (array_key_exists($k, $payload)) {
-                    $update[$k] = $payload[$k];
-                }
-            }
-            if (isset($payload['scomparto_corrente'])) {
-                $update['scomparto_attuale'] = (int) $payload['scomparto_corrente'];
-            }
-            if (isset($payload['allarme_attivo'])) {
-                $update['allarme_attivo'] = (bool) $payload['allarme_attivo'];
-            }
-
-            $dispositivo->update($update);
-
-            $this->line("[TELEM] {$serial} | T:" . ($payload['temperatura'] ?? '-') . ' H:' . ($payload['umidita'] ?? '-'));
-        }, 0);
-
-        $mqtt->subscribe('pillmate/+/stato', function (string $topic, string $raw) {
-            $serial = $this->estraiSeriale($topic);
-            $dispositivo = Dispositivo::where('codice_seriale', $serial)->first();
-            if (!$dispositivo) {
-                return;
-            }
-
-            $status = trim($raw, "\" \t\n\r");
-            $nuovoStato = match ($status) {
-                'online' => 'attivo',
-                'offline' => 'offline',
-                default => null,
-            };
-
-            if ($nuovoStato) {
-                $dispositivo->update([
-                    'stato' => $nuovoStato,
-                    'ultima_connessione' => now(),
-                    'ultimo_payload_at' => now(),
+                config([
+                    'mqtt-client.connections.default.client_id' => env('MQTT_LISTENER_CLIENT_ID', 'laravel-pillmate-listener'),
+                    'mqtt-client.connections.default.connection_settings.connect_timeout' => 10,
+                    'mqtt-client.connections.default.connection_settings.socket_timeout' => 5,
+                    'mqtt-client.connections.default.connection_settings.keep_alive_interval' => 60,
                 ]);
-                $this->info("[STATO] {$serial} -> {$nuovoStato}");
-            }
 
-            if ($nuovoStato === 'attivo') {
-                $this->inviaConfigurazione($dispositivo);
-            }
-        }, 1);
+                $mqtt = MQTT::connection();
 
-        $mqtt->loop(true, true);
+                $mqtt->subscribe('pillmate/+/eventi', function (string $topic, string $raw) {
+                    $serial = $this->estraiSeriale($topic);
+                    $payload = json_decode($raw, true);
+
+                    if (!is_array($payload) || !isset($payload['azione'])) {
+                        return;
+                    }
+
+                    $dispositivo = Dispositivo::where('codice_seriale', $serial)->first();
+
+                    if (!$dispositivo) {
+                        $this->warn("[MQTT] Dispositivo sconosciuto: {$serial}");
+                        return;
+                    }
+
+                    $this->salvaEventoRaw($dispositivo, $payload, $topic);
+
+                    match ($payload['azione']) {
+                        'pillola_erogata' => $this->gestisciErogazione($dispositivo, $payload),
+                        'mappa_scomparti' => $this->sincronizzaMappa($dispositivo, $payload),
+                        'richiesta_ricarica' => $this->gestisciRichiestaRicarica($dispositivo, $payload),
+                        'errore_erogazione' => $this->gestisciErroreFarmaco($dispositivo, $payload),
+                        default => $this->line("[MQTT] Azione non gestita: {$payload['azione']}"),
+                    };
+                }, 1);
+
+                $mqtt->subscribe('pillmate/+/telemetria', function (string $topic, string $raw) {
+                    $serial = $this->estraiSeriale($topic);
+                    $payload = json_decode($raw, true);
+
+                    if (!is_array($payload)) {
+                        return;
+                    }
+
+                    $dispositivo = Dispositivo::where('codice_seriale', $serial)->first();
+
+                    if (!$dispositivo) {
+                        return;
+                    }
+
+                    $update = [
+                        'ultima_connessione' => now(),
+                        'ultimo_payload_at' => now(),
+                    ];
+
+                    foreach (['temperatura', 'umidita', 'wifi_rssi'] as $k) {
+                        if (array_key_exists($k, $payload)) {
+                            $update[$k] = $payload[$k];
+                        }
+                    }
+
+                    if (isset($payload['scomparto_corrente'])) {
+                        $update['scomparto_attuale'] = (int) $payload['scomparto_corrente'];
+                    }
+
+                    if (isset($payload['allarme_attivo'])) {
+                        $update['allarme_attivo'] = (bool) $payload['allarme_attivo'];
+                    }
+
+                    $dispositivo->update($update);
+
+                    $this->line("[TELEM] {$serial} | T:" . ($payload['temperatura'] ?? '-') . ' H:' . ($payload['umidita'] ?? '-'));
+                }, 0);
+
+                $mqtt->subscribe('pillmate/+/stato', function (string $topic, string $raw) {
+                    $serial = $this->estraiSeriale($topic);
+                    $dispositivo = Dispositivo::where('codice_seriale', $serial)->first();
+
+                    if (!$dispositivo) {
+                        return;
+                    }
+
+                    $status = trim($raw, "\" \t\n\r");
+
+                    $nuovoStato = match ($status) {
+                        'online' => 'attivo',
+                        'offline' => 'offline',
+                        default => null,
+                    };
+
+                    if ($nuovoStato) {
+                        $dispositivo->update([
+                            'stato' => $nuovoStato,
+                            'ultima_connessione' => now(),
+                            'ultimo_payload_at' => now(),
+                        ]);
+
+                        $this->info("[STATO] {$serial} -> {$nuovoStato}");
+                    }
+
+                    if ($nuovoStato === 'attivo') {
+                        $this->inviaConfigurazione($mqtt, $dispositivo);
+                    }
+                }, 1);
+
+                $mqtt->loop(true, true);
+            } catch (Throwable $e) {
+                $this->error('[MQTT] Listener disconnesso: ' . $e->getMessage());
+                $this->warn('[MQTT] Riprovo la connessione tra 3 secondi...');
+
+                try {
+                    MQTT::disconnect();
+                } catch (Throwable $ignored) {
+                    //
+                }
+
+                sleep(3);
+            }
+        }
     }
 
     private function gestisciErogazione(Dispositivo $dispositivo, array $payload): void
@@ -115,7 +147,8 @@ class MqttListen extends Command
         $idFarmaco = (int) ($payload['id_farmaco'] ?? 0);
         $numScomparto = (int) ($payload['scomparto_usato'] ?? 0);
         $metodo = (string) ($payload['metodo_attivazione'] ?? 'sconosciuto');
-        $quantitaRimanente = max(0, (int) ($payload['quantita_rimanente'] ?? 0));
+        // Il firmware manda "quantita" (quantità rimasta), non "quantita_rimanente"
+        $quantitaRimanente = max(0, (int) ($payload['quantita'] ?? $payload['quantita_rimanente'] ?? 0));
         $timestamp = now();
 
         if ($numScomparto > 0) {
@@ -147,14 +180,22 @@ class MqttListen extends Command
                     'scomparto_numero' => $numScomparto ?: null,
                     'allarme_inviato' => true,
                     'data_allarme' => $assunzione->data_allarme ?? $timestamp,
-                    'apertura_forzata' => strtoupper($metodo) === 'MQTT_DIRETTO',
+                    'apertura_forzata'     => strtoupper($metodo) === 'MQTT_DIRETTO',
                     'data_apertura_forzata' => strtoupper($metodo) === 'MQTT_DIRETTO' ? $timestamp : null,
+                    'quantita_erogata'      => $quantitaRimanente,
+                    'forzata_medico'        => strtoupper($metodo) === 'MQTT_DIRETTO',
                 ]);
             }
         }
 
         $nome = $payload['nome_farmaco'] ?? "Farmaco #{$idFarmaco}";
-        $this->creaNotifica((int) $dispositivo->id_paziente, 'Pillola erogata', "La pillola \"{$nome}\" è stata erogata (metodo: {$metodo}).", 'info');
+
+        $this->creaNotifica(
+            (int) $dispositivo->id_paziente,
+            'Pillola erogata',
+            "La pillola \"{$nome}\" è stata erogata (metodo: {$metodo}).",
+            'info'
+        );
     }
 
     private function sincronizzaMappa(Dispositivo $dispositivo, array $payload): void
@@ -165,11 +206,14 @@ class MqttListen extends Command
             }
 
             $numero = (int) $s['numero'];
-            $idFarmaco = isset($s['id_farmaco']) && (int)$s['id_farmaco'] > 0 ? (int)$s['id_farmaco'] : null;
+            $idFarmaco = isset($s['id_farmaco']) && (int) $s['id_farmaco'] > 0 ? (int) $s['id_farmaco'] : null;
             $quantita = max(0, (int) ($s['quantita'] ?? 0));
 
             ScompartoDispositivo::updateOrCreate(
-                ['id_dispositivo' => $dispositivo->id, 'numero_scomparto' => $numero],
+                [
+                    'id_dispositivo' => $dispositivo->id,
+                    'numero_scomparto' => $numero,
+                ],
                 [
                     'angolo' => $s['angolo'] ?? ScompartoDispositivo::calcolaAngolo($numero),
                     'id_farmaco' => $idFarmaco,
@@ -187,23 +231,35 @@ class MqttListen extends Command
         $num = (int) ($payload['scomparto'] ?? 0);
         $nome = $payload['nome_farmaco'] ?? 'Farmaco';
 
-        $this->creaNotifica((int) $dispositivo->id_paziente, 'Ricarica scomparto', "Scomparto {$num} ({$nome}) da ricaricare.", 'allarme');
+        $this->creaNotifica(
+            (int) $dispositivo->id_paziente,
+            'Ricarica scomparto',
+            "Scomparto {$num} ({$nome}) da ricaricare.",
+            'allarme'
+        );
     }
 
     private function gestisciErroreFarmaco(Dispositivo $dispositivo, array $payload): void
     {
         $nome = $payload['nome_farmaco'] ?? ('Farmaco ID ' . ($payload['id_farmaco'] ?? '?'));
-        $this->creaNotifica((int) $dispositivo->id_paziente, 'Farmaco non disponibile', "Il farmaco \"{$nome}\" non è disponibile nello scomparto configurato.", 'allarme');
+
+        $this->creaNotifica(
+            (int) $dispositivo->id_paziente,
+            'Farmaco non disponibile',
+            "Il farmaco \"{$nome}\" non è disponibile nello scomparto configurato.",
+            'allarme'
+        );
     }
 
-    private function inviaConfigurazione(Dispositivo $dispositivo): void
+    private function inviaConfigurazione($mqtt, Dispositivo $dispositivo): void
     {
         $payload = json_encode([
             'comando' => 'configura_scomparti',
             'scomparti' => ScompartoDispositivo::buildPayloadPerDispositivo($dispositivo->id),
         ]);
 
-        MQTT::publish($dispositivo->topicComandi(), $payload);
+        $mqtt->publish($dispositivo->topicComandi(), $payload, 0);
+
         $this->info("[AUTO-CONFIG] Configurazione inviata a {$dispositivo->codice_seriale}.");
     }
 
@@ -243,6 +299,7 @@ class MqttListen extends Command
         }
 
         $idUtente = DB::table('pazienti')->where('id', $idPaziente)->value('id_utente');
+
         if (!$idUtente) {
             return;
         }

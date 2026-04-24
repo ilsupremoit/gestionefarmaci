@@ -9,8 +9,9 @@ class ScompartoDispositivo extends Model
     protected $table = 'scomparti_dispositivo';
 
     public const NUM_SCOMPARTI = 8;
-    // allineato al firmware C++ condiviso dall'utente
-    public const ANGOLI = [0, 22, 44, 66, 88, 110, 132, 154];
+
+    // Angoli firmware C++ (indice 0-based)
+    public const ANGOLI = [26, 46, 67, 93, 113, 137, 160, 180];
 
     protected $fillable = [
         'id_dispositivo',
@@ -23,8 +24,11 @@ class ScompartoDispositivo extends Model
     ];
 
     protected $casts = [
-        'pieno' => 'boolean',
+        'pieno'    => 'boolean',
+        'quantita' => 'integer',
     ];
+
+    // ── Relazioni ─────────────────────────────────────────────────
 
     public function dispositivo()
     {
@@ -41,10 +45,11 @@ class ScompartoDispositivo extends Model
         return $this->belongsTo(Terapia::class, 'id_terapia');
     }
 
-    public static function calcolaAngolo(int $numeroScomparto): int
+    // ── Helpers statici ───────────────────────────────────────────
+
+    public static function calcolaAngolo(int $numero): int
     {
-        $index = $numeroScomparto - 1;
-        return self::ANGOLI[$index] ?? 0;
+        return self::ANGOLI[$numero - 1] ?? 0;
     }
 
     public static function inizializzaPerDispositivo(int $idDispositivo): void
@@ -52,15 +57,15 @@ class ScompartoDispositivo extends Model
         for ($i = 1; $i <= self::NUM_SCOMPARTI; $i++) {
             self::firstOrCreate(
                 ['id_dispositivo' => $idDispositivo, 'numero_scomparto' => $i],
-                [
-                    'angolo' => self::calcolaAngolo($i),
-                    'pieno' => false,
-                    'quantita' => 0,
-                ]
+                ['angolo' => self::calcolaAngolo($i), 'pieno' => false, 'quantita' => 0]
             );
         }
     }
 
+    /**
+     * Costruisce il payload MQTT configura_scomparti con quantita.
+     * Il firmware C++ leggerà "quantita" invece di "pieno".
+     */
     public static function buildPayloadPerDispositivo(int $idDispositivo): array
     {
         self::inizializzaPerDispositivo($idDispositivo);
@@ -69,16 +74,14 @@ class ScompartoDispositivo extends Model
             ->where('id_dispositivo', $idDispositivo)
             ->orderBy('numero_scomparto')
             ->get()
-            ->map(function (self $s) {
-                $quantita = (int) ($s->quantita ?? 0);
-
-                return [
-                    'numero' => (int) $s->numero_scomparto,
-                    'id_farmaco' => (int) ($s->id_farmaco ?? 0),
-                    'nome_farmaco' => $s->farmaco?->nome ?? '---',
-                    'quantita' => $quantita,
-                ];
-            })
+            ->map(fn(self $s) => [
+                'numero'       => (int) $s->numero_scomparto,
+                'id_farmaco'   => (int) ($s->id_farmaco ?? 0),
+                'nome_farmaco' => $s->farmaco?->nome ?? '---',
+                'quantita'     => (int) ($s->quantita ?? 0),
+                // pieno rimane per retro-compatibilità firmware vecchio
+                'pieno'        => ($s->quantita ?? 0) > 0,
+            ])
             ->toArray();
     }
 }
