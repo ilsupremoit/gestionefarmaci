@@ -49,7 +49,8 @@ class DispositivoController extends Controller
                 [
                     'angolo'     => ScompartoDispositivo::calcolaAngolo($numero),
                     'id_farmaco' => $idFarmaco,
-                    'pieno'      => isset($valori['pieno']) && $valori['pieno'],
+                    'quantita'   => max(0, (int) ($valori['quantita'] ?? 0)),
+                    'pieno'      => ((int) ($valori['quantita'] ?? 0)) > 0,
                 ]
             );
         }
@@ -66,16 +67,17 @@ class DispositivoController extends Controller
      */
     public function aggiornaStato(Request $request, int $idDispositivo, int $numeroScomparto)
     {
-        $request->validate(['pieno' => 'required|boolean']);
+        $request->validate(['quantita' => 'required|integer|min:0']);
 
         $scomparto = ScompartoDispositivo::where('id_dispositivo', $idDispositivo)
             ->where('numero_scomparto', $numeroScomparto)
             ->firstOrFail();
 
-        $scomparto->update(['pieno' => $request->boolean('pieno')]);
+        $quantita = max(0, (int) $request->integer('quantita'));
+        $scomparto->update(['quantita' => $quantita, 'pieno' => $quantita > 0]);
 
         app(MqttController::class)->configuraScomparti(new Request(), $idDispositivo);
 
-        return response()->json(['ok' => true, 'pieno' => $scomparto->pieno]);
+        return response()->json(['ok' => true, 'pieno' => $scomparto->pieno, 'quantita' => $scomparto->quantita]);
     }
 }

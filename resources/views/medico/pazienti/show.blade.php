@@ -177,6 +177,13 @@
         </div>
     </div>
 
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 14px;">
+        <a href="{{ route('medico.pazienti.storico', [$paziente->id, 'oggi']) }}" class="btn-add-terapia" style="text-decoration:none;">Previste oggi</a>
+        <a href="{{ route('medico.pazienti.storico', [$paziente->id, 'forzate']) }}" class="btn-add-terapia" style="text-decoration:none;">Forzate</a>
+        <a href="{{ route('medico.pazienti.storico', [$paziente->id, 'saltate']) }}" class="btn-add-terapia" style="text-decoration:none;">Saltate</a>
+        <a href="{{ route('medico.pazienti.storico', [$paziente->id, 'tutte']) }}" class="btn-add-terapia" style="text-decoration:none;">Storico completo</a>
+    </div>
+
     <div class="stat-row">
         <div class="stat-pill blue">
             <div class="val">{{ $stats['oggi_totali'] }}</div>
@@ -244,6 +251,53 @@
                                 <td style="font-size:12px; color:var(--muted);">
                                     {{ $a->dispositivo?->nome_dispositivo ?? $a->dispositivo?->codice_seriale ?? '—' }}
                                 </td>
+                            </tr>
+                        @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            @endif
+        </div>
+    </div>
+
+
+    <div class="grid2" style="margin-top:14px;">
+        <div class="card">
+            <div class="card-title"><i data-lucide="calendar-clock"></i> Terapie previste oggi</div>
+            @if($assunzioniOggi->isEmpty())
+                <div style="color:var(--muted);font-size:13px;padding:12px 0;">Nessuna dose prevista oggi.</div>
+            @else
+                <div class="table-wrap">
+                    <table>
+                        <thead><tr><th>Ora</th><th>Farmaco</th><th>Stato</th></tr></thead>
+                        <tbody>
+                        @foreach($assunzioniOggi as $a)
+                            <tr>
+                                <td>{{ optional($a->data_prevista)->format('H:i') }}</td>
+                                <td>{{ $a->somministrazione->terapia->farmaco->nome ?? 'N/A' }}</td>
+                                <td><span class="stato-badge stato-{{ $a->stato }}">{{ statoLabel($a->stato) }}</span></td>
+                            </tr>
+                        @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            @endif
+        </div>
+
+        <div class="card">
+            <div class="card-title"><i data-lucide="history"></i> Storico erogazioni forzate</div>
+            @if($storicoForzate->isEmpty())
+                <div style="color:var(--muted);font-size:13px;padding:12px 0;">Nessuna erogazione forzata registrata.</div>
+            @else
+                <div class="table-wrap">
+                    <table>
+                        <thead><tr><th>Data/Ora</th><th>Azione</th><th>Dettaglio</th></tr></thead>
+                        <tbody>
+                        @foreach($storicoForzate as $ev)
+                            <tr>
+                                <td>{{ \Carbon\Carbon::parse($ev->created_at)->format('d/m H:i') }}</td>
+                                <td>{{ str_replace('_',' ', $ev->azione) }}</td>
+                                <td style="font-size:12px; color:var(--muted);">{{ Str::limit($ev->messaggio ?? '-', 90) }}</td>
                             </tr>
                         @endforeach
                         </tbody>
@@ -462,6 +516,15 @@
                         @endforeach
                     </div>
                 @endif
+
+                <form method="POST" action="{{ route('medico.pazienti.terapie.destroy', [$paziente->id, $terapia->id]) }}" style="margin-top:10px;">
+                    @csrf
+                    @method('DELETE')
+                    <button type="submit" class="btn-iot btn-alarm-off" onclick="return confirm('Eliminare questa terapia? Verranno rimosse anche le somministrazioni collegate.');">
+                        <i data-lucide="trash-2"></i>
+                        Elimina terapia
+                    </button>
+                </form>
             </div>
         @empty
             <div style="text-align:center; color:var(--muted); padding:24px; font-size:13px;">Nessuna terapia registrata. Usa il pulsante per aggiungerne una.</div>

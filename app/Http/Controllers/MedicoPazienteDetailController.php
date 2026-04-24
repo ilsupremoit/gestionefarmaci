@@ -47,10 +47,29 @@ class MedicoPazienteDetailController extends Controller
             'oggi_totali'  => $oggiAssunzioni->count(),
             'oggi_prese'   => $oggiAssunzioni->whereIn('stato', ['assunta', 'erogata'])->count(),
             'oggi_saltate' => $oggiAssunzioni->whereIn('stato', ['saltata', 'non_ritirata'])->count(),
-            'oggi_attesa'  => $oggiAssunzioni->where('stato', 'in_attesa')->count(),
+            'oggi_attesa'  => $oggiAssunzioni->whereIn('stato', ['in_attesa', 'allarme_attivo'])->count(),
         ];
 
-        return view('medico.pazienti.show', compact('paziente', 'assunzioni', 'stats'));
+        $assunzioniOggi = Assunzione::whereHas('somministrazione.terapia', function ($q) use ($paziente) {
+                $q->where('id_paziente', $paziente->id);
+            })
+            ->with('somministrazione.terapia.farmaco', 'dispositivo')
+            ->whereDate('data_prevista', today())
+            ->orderBy('data_prevista')
+            ->get();
+
+        $storicoForzate = DB::table('eventi_dispositivo')
+            ->where('id_paziente', $paziente->id)
+            ->whereIn('azione', ['apertura_forzata', 'pillola_erogata'])
+            ->where(function ($q) {
+                $q->where('metodo_attivazione', 'medico_web')
+                  ->orWhere('payload_json', 'like', '%MQTT_DIRETTO%');
+            })
+            ->orderByDesc('created_at')
+            ->limit(30)
+            ->get();
+
+        return view('medico.pazienti.show', compact('paziente', 'assunzioni', 'stats', 'assunzioniOggi', 'storicoForzate'));
     }
 
     /**
@@ -209,6 +228,59 @@ class MedicoPazienteDetailController extends Controller
         });
 
         return back()->with('success', 'Terapia aggiunta con successo.');
+    }
+
+
+    public function storico(Paziente $paziente, string $tipo = 'tutte')
+    {
+        $this->autorizza($paziente);
+
+        $tipiAmmessi = ['tutte', 'oggi', 'prese', 'saltate', 'forzate'];
+        if (!in_array($tipo, $tipiAmmessi, true)) {
+            $tipo = 'tutte';
+        }
+
+        $query = Assunzione::whereHas('somministrazione.terapia', function ($q) use ($paziente) {
+                $q->where('id_paziente', $paziente->id);
+            })
+            ->with('somministrazione.terapia.farmaco', 'dispositivo');
+
+        if ($tipo === 'oggi') {
+            $query->whereDate('data_prevista', today());
+        }
+        if ($tipo === 'prese') {
+            $query->whereIn('stato', ['assunta', 'erogata']);
+        }
+        if ($tipo === 'saltate') {
+            $query->whereIn('stato', ['saltata', 'non_ritirata']);
+        }
+        if ($tipo === 'forzate') {
+            $query->where('apertura_forzata', true);
+        }
+
+        $assunzioni = $query->orderByDesc('data_prevista')->paginate(20)->withQueryString();
+
+        $tipoMeta = [
+            'tutte'   => ['icon' => 'list', 'label' => 'Storico completo'],
+            'oggi'    => ['icon' => 'calendar-clock', 'label' => 'Previste oggi'],
+            'prese'   => ['icon' => 'check-circle-2', 'label' => 'Assunzioni prese'],
+            'saltate' => ['icon' => 'x-circle', 'label' => 'Assunzioni saltate'],
+            'forzate' => ['icon' => 'shield-alert', 'label' => 'Erogazioni forzate'],
+        ];
+
+        return view('medico.pazienti.storico', compact('paziente', 'assunzioni', 'tipo', 'tipoMeta'));
+    }
+
+    public function destroyTerapia(Paziente $paziente, Terapia $terapia)
+    {
+        $this->autorizza($paziente);
+
+        abort_if($terapia->id_paziente !== $paziente->id, 403);
+
+        $nomeFarmaco = $terapia->farmaco?->nome ?? 'Terapia';
+        $terapia->delete();
+
+        return back()->with('success', "Terapia '{$nomeFarmaco}' eliminata con successo.");
     }
 
     // ── Helpers ───────────────────────────────────────

@@ -143,6 +143,7 @@ class MedicoController extends Controller
                 'angolo'          => ScompartoDispositivo::ANGOLI[$i - 1],
                 'id_farmaco'      => null,
                 'pieno'           => false,
+                'quantita'        => 0,
             ]);
         }
 
@@ -166,6 +167,7 @@ class MedicoController extends Controller
             'scomparti.*.id_farmaco'       => ['nullable', 'exists:farmaci,id'],
             'scomparti.*.id_terapia'       => ['nullable', 'exists:terapie,id'],
             'scomparti.*.pieno'            => ['nullable', 'boolean'],
+            'scomparti.*.quantita'         => ['nullable', 'integer', 'min:0'],
         ]);
 
         $mqttPayload = [];
@@ -174,13 +176,14 @@ class MedicoController extends Controller
             $num      = (int) $s['numero_scomparto'];
             $idFarm   = $s['id_farmaco'] ?: null;
             $idTer    = $s['id_terapia'] ?: null;
-            $pieno    = isset($s['pieno']) ? (bool) $s['pieno'] : false;
+            $quantita = max(0, (int) ($s['quantita'] ?? 0));
+            $pieno    = $quantita > 0;
             $angolo   = ScompartoDispositivo::ANGOLI[$num - 1];
 
             // Upsert: aggiorna o crea lo scomparto
             ScompartoDispositivo::updateOrCreate(
                 ['id_dispositivo' => $dispositivo->id, 'numero_scomparto' => $num],
-                ['angolo' => $angolo, 'id_farmaco' => $idFarm, 'id_terapia' => $idTer, 'pieno' => $pieno]
+                ['angolo' => $angolo, 'id_farmaco' => $idFarm, 'id_terapia' => $idTer, 'pieno' => $pieno, 'quantita' => $quantita]
             );
 
             // Prepara payload MQTT solo per scomparti con farmaco
@@ -190,7 +193,7 @@ class MedicoController extends Controller
                     'numero'       => $num,
                     'id_farmaco'   => (int) $idFarm,
                     'nome_farmaco' => $farmaco?->nome ?? 'Farmaco',
-                    'pieno'        => $pieno,
+                    'quantita'     => $quantita,
                 ];
             } else {
                 // Scomparto vuoto — lo comunichiamo ugualmente
@@ -198,7 +201,7 @@ class MedicoController extends Controller
                     'numero'       => $num,
                     'id_farmaco'   => 0,
                     'nome_farmaco' => '---',
-                    'pieno'        => false,
+                    'quantita'     => 0,
                 ];
             }
         }
@@ -212,9 +215,12 @@ class MedicoController extends Controller
         ]);
 
         try {
+            config(['mqtt-client.connections.default.connection_settings.connect_timeout' => 2]);
+            config(['mqtt-client.connections.default.connection_settings.socket_timeout' => 2]);
             MQTT::publish($dispositivo->topicComandi(), $payload);
             $mqttOk = true;
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
+            report($e);
             $mqttOk = false;
         }
 
@@ -280,8 +286,9 @@ class MedicoController extends Controller
             return back()->with('error', '❌ Errore MQTT: ' . $e->getMessage());
         }
 
-        // Segna come apertura forzata nel DB
-        $scomparto->update(['pieno' => false]);
+        // Aggiorna quantità locale (il valore reale verrà comunque risincronizzato dagli eventi MQTT)
+        $nuovaQuantita = max(0, (int) $scomparto->quantita - 1);
+        $scomparto->update(['quantita' => $nuovaQuantita, 'pieno' => $nuovaQuantita > 0]);
 
         DB::table('eventi_dispositivo')->insert([
             'id_dispositivo'     => $dispositivo->id,
@@ -475,6 +482,7 @@ class MedicoController extends Controller
                     'id_terapia'    => $s->id_terapia,
                     'terapia_info'  => $s->terapia ? $s->terapia->farmaco?->nome . ' — ' . $s->terapia->somministrazioni->map(fn($x) => substr($x->ora,0,5).' '.$x->giorno_settimana)->join(', ') : null,
                     'pieno'         => (bool) $s->pieno,
+                    'quantita'      => (int) ($s->quantita ?? 0),
                 ];
             } else {
                 // Crea slot vuoto
@@ -483,6 +491,7 @@ class MedicoController extends Controller
                     'numero_scomparto' => $i,
                     'angolo'           => ScompartoDispositivo::ANGOLI[$i - 1],
                     'pieno'            => false,
+                    'quantita'         => 0,
                 ]);
                 $risultato[$i] = [
                     'numero'       => $i,
@@ -493,6 +502,7 @@ class MedicoController extends Controller
                     'id_terapia'   => null,
                     'terapia_info' => null,
                     'pieno'        => false,
+                    'quantita'     => 0,
                 ];
             }
         }

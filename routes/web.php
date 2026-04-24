@@ -75,6 +75,8 @@ Route::middleware(['auth', 'role:medico'])->prefix('medico')->name('medico.')->g
 
     // Terapie
     Route::post('/pazienti/{paziente}/terapie', [MedicoPazienteDetailController::class, 'storeTerapia'])->name('pazienti.terapie.store');
+    Route::delete('/pazienti/{paziente}/terapie/{terapia}', [MedicoPazienteDetailController::class, 'destroyTerapia'])->name('pazienti.terapie.destroy');
+    Route::get('/pazienti/{paziente}/storico/{tipo?}', [MedicoPazienteDetailController::class, 'storico'])->name('pazienti.storico');
 
     // Comandi IoT rapidi (dalla pagina paziente)
     Route::post('/pazienti/{paziente}/eroga',   [MedicoPazienteDetailController::class, 'erogazioneForzata'])->name('pazienti.eroga');
