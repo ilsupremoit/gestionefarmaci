@@ -1,338 +1,572 @@
-Certo. Te lo spiego in modo pratico.
+# PillMate - Progetto completo
 
-## Che cos’è MQTT
+PillMate e' un sistema per la gestione delle terapie farmacologiche. Il progetto e' composto da:
 
-MQTT è un protocollo di messaggistica **leggero** basato su **publish/subscribe**: un client pubblica un messaggio su un **topic**, il **broker** lo riceve e lo inoltra a tutti i client iscritti a quel topic. Il pacchetto `php-mqtt/laravel-client` è un wrapper Laravel del client `php-mqtt/client`, e serve proprio per collegare Laravel a un broker MQTT, così puoi **pubblicare** e **sottoscrivere** topic dal tuo progetto. ([GitHub][1])
+- un backend Laravel, che gestisce sito web, API, autenticazione e database MySQL;
+- un'app Android, pensata per il paziente/familiare, che comunica con Laravel tramite API;
+- un database MySQL chiamato `pillmate`;
+- ngrok, usato per testare il progetto da un telefono vero tramite un URL pubblico temporaneo.
 
-## In parole povere
-
-Pensa così:
-
-* **Broker MQTT** = il “centralino” dei messaggi
-* **Topic** = il canale, tipo `pillmate/paziente/1/farmaco`
-* **Publisher** = chi manda il messaggio
-* **Subscriber** = chi ascolta quel topic
-
-Esempio tuo:
-
-* un dispositivo o app invia: `pillmate/paziente/12/farmaco`
-* Laravel ascolta quel topic
-* quando arriva il messaggio, Laravel lo salva nel database o aggiorna lo stato
-
-## Devi creare un listener tra database e broker?
-
-**Non proprio “tra database e broker”** nel senso classico.
-La soluzione giusta è questa:
-
-* **Laravel pubblica** verso MQTT quando il tuo sito deve inviare qualcosa al broker
-* **Laravel ascolta** MQTT con un **subscriber/listener** quando il broker manda eventi che devono finire nel database
-
-Quindi sì, ti serve un **listener/subscriber**, ma non come “ponte fisso in mezzo”; ti serve come **processo Laravel in ascolto** che riceve i messaggi MQTT e poi li scrive nel DB.
-
-La parte importante è questa: la sottoscrizione MQTT richiede un **event loop** continuo. La documentazione del client lo dice chiaramente: per `subscribe()` bisogna eseguire `loop(true)`, cioè un processo che resta vivo ad ascoltare i messaggi. ([GitHub][1])
-
----
-
-# Come si usa in Laravel
-
-## 1. Installa il pacchetto
-
-```bash
-composer require php-mqtt/laravel-client
-php artisan vendor:publish --provider="PhpMqtt\Client\MqttClientServiceProvider" --tag="config"
-```
-
-Il pacchetto si registra con auto-discovery e aggiunge anche la facade `MQTT`. ([GitHub][1])
-
----
-
-## 2. Configura `.env`
-
-Nel file pubblicato `config/mqtt-client.php` puoi definire una o più connessioni. La documentazione consiglia di usare variabili d’ambiente. ([GitHub][1])
-
-Esempio `.env`:
-
-```env
-MQTT_HOST=127.0.0.1
-MQTT_PORT=1883
-MQTT_CLIENT_ID=laravel-pillmate
-MQTT_USERNAME=
-MQTT_PASSWORD=
-MQTT_USE_TLS=false
-```
-
-Poi nel config usi quei valori.
-
----
-
-## 3. Pubblicare un messaggio da Laravel
-
-Per inviare un messaggio al broker:
-
-```php
-use PhpMqtt\Client\Facades\MQTT;
-
-MQTT::publish('pillmate/test', 'ciao dal sito');
-```
-
-La facade supporta direttamente `publish(topic, message)` per QoS 0. ([GitHub][1])
-
-Per esempio dentro un controller:
-
-```php
-<?php
-
-namespace App\Http\Controllers;
-
-use PhpMqtt\Client\Facades\MQTT;
-
-class FarmacoController extends Controller
-{
-    public function inviaPromemoria()
-    {
-        MQTT::publish('pillmate/paziente/12/promemoria', json_encode([
-            'farmaco' => 'Tachipirina',
-            'orario' => '08:00'
-        ]));
-
-        return back()->with('success', 'Messaggio MQTT inviato.');
-    }
-}
-```
-
----
-
-## 4. Ascoltare un topic con un subscriber Laravel
-
-Questa è la parte che ti serve davvero.
-
-La cosa giusta in Laravel è creare un **comando Artisan** che resta in ascolto.
-
-### Crea il comando
-
-```bash
-php artisan make:command MqttListen
-```
-
-### `app/Console/Commands/MqttListen.php`
-
-```php
-<?php
-
-namespace App\Console\Commands;
-
-use Illuminate\Console\Command;
-use PhpMqtt\Client\Facades\MQTT;
-use App\Models\Notifica;
-
-class MqttListen extends Command
-{
-    protected $signature = 'mqtt:listen';
-    protected $description = 'Ascolta i messaggi MQTT e li salva nel database';
-
-    public function handle()
-    {
-        $mqtt = MQTT::connection();
-
-        $mqtt->subscribe('pillmate/paziente/+/farmaco', function (string $topic, string $message) {
-            $this->info("Messaggio ricevuto su {$topic}: {$message}");
-
-            $payload = json_decode($message, true);
-
-            if (!$payload) {
-                return;
-            }
-
-            Notifica::create([
-                'topic' => $topic,
-                'messaggio' => $message,
-            ]);
-        }, 1);
-
-        $mqtt->loop(true);
-    }
-}
-```
-
-Questo schema segue esattamente il modo d’uso previsto dalla libreria: `MQTT::connection()`, `subscribe(...)`, poi `loop(true)`. ([GitHub][1])
-
-Poi lo avvii con:
-
-```bash
-php artisan mqtt:listen
-```
-
----
-
-# Architettura giusta per il tuo caso
-
-Per il tuo sito Laravel, la struttura sensata è questa:
-
-## Caso A: Laravel deve solo inviare ordini/comandi
-
-Allora usi MQTT solo come **publisher**:
-
-`Laravel -> MQTT broker -> dispositivo/app`
-
-Esempio:
-
-* utente clicca “ricorda farmaco”
-* Laravel pubblica su `pillmate/device/12/reminder`
-
-## Caso B: Laravel deve ricevere eventi dal broker e salvarli
-
-Allora ti serve il **subscriber**:
-
-`dispositivo -> MQTT broker -> Laravel listener -> database`
-
-Esempio:
-
-* dispenser invia “farmaco preso”
-* broker inoltra il messaggio
-* il comando `mqtt:listen` lo riceve
-* Laravel salva l’evento nel DB
-
-## Caso C: bidirezionale
-
-Molto comune:
-
-* Laravel pubblica comandi
-* Laravel ascolta conferme/eventi
-* il database resta la fonte storica dei dati
-
----
-
-# Quindi serve un listener “in mezzo”?
-
-La risposta corretta è:
-
-**Ti serve un processo subscriber Laravel che ascolta il broker e poi aggiorna il DB.**
-Non ti serve un “middleware separato” tra DB e broker, a meno che tu non voglia un microservizio dedicato.
-
-Per un progetto come il tuo, la soluzione normale è:
-
-* **Controller/Job Laravel** per pubblicare
-* **Command Laravel long-running** per ascoltare e salvare
-
----
-
-# Una cosa importante: non farlo dentro una route web
-
-Non fare una cosa del genere dentro un controller HTTP:
-
-```php
-$mqtt->subscribe(...);
-$mqtt->loop(true);
-```
-
-perché il loop è pensato per restare attivo continuamente, non per una richiesta web che deve finire in pochi secondi. La documentazione del client spiega che la subscribe richiede un event loop attivo. ([GitHub][1])
-
-Quindi il subscriber va lanciato come:
-
-* comando artisan
-* processo gestito da Supervisor, systemd, Docker, ecc.
-
----
-
-# Esempio pratico per PillMate
-
-Mettiamo che tu voglia ricevere conferme da un dispenser.
-
-## Topic
+## Struttura del progetto
 
 ```text
-pillmate/pazienti/12/eventi
+C:\xampp\htdocs\gestionefarmaci
 ```
 
-## Messaggio JSON inviato dal dispositivo
+Contiene il backend Laravel:
 
-```json
-{
-  "tipo": "farmaco_assunto",
-  "farmaco": "Aspirina",
-  "timestamp": "2026-04-11 10:30:00"
-}
+- pagine web Blade per admin, medico e paziente;
+- API usate dall'app Android;
+- collegamento al database MySQL;
+- autenticazione utenti;
+- gestione terapie, storico assunzioni, notifiche e dispositivi.
+
+```text
+C:\Users\Utente\Downloads\pillmate-android-conversion (1)\pillmate-android-conversion
 ```
 
-## Subscriber Laravel
+Contiene l'app Android:
 
-Quando lo riceve:
+- schermata login;
+- dashboard paziente;
+- caricamento dati tramite API Laravel;
+- configurazione `BASE_URL` per collegarsi al backend.
 
-* trova il paziente 12 dal topic
-* salva nel database
-* eventualmente crea una notifica nel sito
+## Tecnologie usate
 
----
+- Laravel 13
+- PHP 8.5
+- MySQL tramite XAMPP
+- Blade
+- Vite
+- Kotlin
+- Android
+- Retrofit
+- ngrok
 
-# Esempio migliore con parsing topic
+## Come funziona la comunicazione
 
-```php
-$mqtt->subscribe('pillmate/pazienti/+/eventi', function (string $topic, string $message) {
-    preg_match('#pillmate/pazienti/(\d+)/eventi#', $topic, $matches);
+L'app Android non si collega direttamente al database. Il flusso corretto e':
 
-    $pazienteId = $matches[1] ?? null;
-    $payload = json_decode($message, true);
-
-    if (!$pazienteId || !$payload) {
-        return;
-    }
-
-    \App\Models\Notifica::create([
-        'id_utente' => $pazienteId,
-        'tipo' => $payload['tipo'] ?? 'evento',
-        'messaggio' => $message,
-    ]);
-}, 1);
-
-$mqtt->loop(true);
+```text
+Telefono Android
+    -> HTTPS tramite ngrok
+Laravel API
+    -> query al database MySQL
+Database pillmate
 ```
 
----
+Esempio:
 
-# QoS spiegato semplice
+```text
+App Android
+    -> POST https://...ngrok-free.dev/api/login
+Laravel
+    -> controlla email/password nel database
+MySQL
+    -> restituisce l'utente
+Laravel
+    -> restituisce token e dati in JSON
+App Android
+    -> mostra la dashboard paziente
+```
 
-La libreria supporta i vari livelli QoS; per QoS 1 e 2 bisogna far girare il loop per gestire gli acknowledgment, mentre per la sottoscrizione serve comunque il loop continuo. ([GitHub][1])
+## Requisiti
 
-Per te, pratica:
+Prima di avviare il progetto servono:
 
-* **QoS 0** = veloce, senza garanzie forti
-* **QoS 1** = almeno una volta
-* **QoS 2** = esattamente una volta, più pesante
+- XAMPP installato;
+- MySQL attivo da XAMPP;
+- PHP disponibile da terminale;
+- Composer installato;
+- Node.js e npm installati;
+- Android Studio installato;
+- ngrok installato;
+- telefono Android collegato o APK installato sul telefono.
 
-Per notifiche e stati sanitari leggeri, spesso si usa **QoS 1**.
+## Avvio quotidiano del progetto
 
----
+Questi sono i passaggi da fare ogni volta che vuoi usare il progetto con telefono vero e ngrok.
 
-# In sintesi
+## 1. Avviare MySQL
 
-## Cos’è
+Aprire XAMPP e avviare:
 
-MQTT è un sistema leggero di messaggi publish/subscribe tramite broker. ([GitHub][1])
+```text
+MySQL
+```
 
-## Come lo usi in Laravel
+Il database usato dal progetto e':
 
-Con `php-mqtt/laravel-client` puoi:
+```text
+pillmate
+```
 
-* pubblicare messaggi con `MQTT::publish(...)`
-* ottenere una connessione con `MQTT::connection()`
-* fare `subscribe(...)`
-* avviare `loop(true)` per ascoltare i messaggi ([GitHub][1])
+Se vuoi controllare da terminale che MySQL sia acceso:
 
-## Ti serve un listener?
+```powershell
+C:\xampp\mysql\bin\mysqladmin.exe -u root ping
+```
 
-**Sì**, ma come **comando Laravel sempre acceso**, non come pagina web e non come ponte separato obbligatorio.
+Se funziona, deve comparire:
 
-## Architettura consigliata
+```text
+mysqld is alive
+```
 
-* sito Laravel → pubblica su MQTT
-* comando Laravel `mqtt:listen` → ascolta MQTT
-* callback del subscriber → salva nel database
+## 2. Avviare Laravel
 
-Se vuoi, nel prossimo messaggio ti scrivo direttamente il codice completo per il tuo progetto `gestionefarmaci` con:
+Aprire PowerShell e andare nella cartella Laravel:
 
-* config `.env`
-* comando `php artisan mqtt:listen`
-* salvataggio su tabella `notifiche`
-* esempio controller che pubblica su un topic reale.
+```powershell
+cd C:\xampp\htdocs\gestionefarmaci
+```
 
-[1]: https://github.com/php-mqtt/laravel-client/blob/master/README.md "laravel-client/README.md at master · php-mqtt/laravel-client · GitHub"
+Pulire cache e configurazioni:
+
+```powershell
+php artisan optimize:clear
+```
+
+Avviare il server Laravel:
+
+```powershell
+php artisan serve --host=0.0.0.0 --port=8000
+```
+
+Il sito locale sara' disponibile su:
+
+```text
+http://127.0.0.1:8000
+```
+
+Le API locali saranno disponibili su:
+
+```text
+http://127.0.0.1:8000/api
+```
+
+## 3. Avviare ngrok
+
+In un secondo terminale eseguire:
+
+```powershell
+ngrok http 8000
+```
+
+Ngrok generera' un URL pubblico simile a:
+
+```text
+https://bobble-synopsis-recreate.ngrok-free.dev
+```
+
+Questo URL permette al telefono di raggiungere Laravel anche se Laravel sta girando sul PC.
+
+## 4. Aggiornare Laravel con l'URL ngrok
+
+Nel file:
+
+```text
+C:\xampp\htdocs\gestionefarmaci\.env
+```
+
+impostare:
+
+```env
+APP_URL=https://bobble-synopsis-recreate.ngrok-free.dev
+```
+
+Se ngrok cambia URL, bisogna aggiornare questa riga.
+
+Dopo aver modificato `.env`, pulire la cache:
+
+```powershell
+cd C:\xampp\htdocs\gestionefarmaci
+php artisan optimize:clear
+```
+
+## 5. Aggiornare l'app Android con l'URL ngrok
+
+Nel file:
+
+```text
+C:\Users\Utente\Downloads\pillmate-android-conversion (1)\pillmate-android-conversion\app\build.gradle.kts
+```
+
+controllare questa riga:
+
+```kotlin
+buildConfigField("String", "BASE_URL", "\"https://bobble-synopsis-recreate.ngrok-free.dev/api/\"")
+```
+
+L'URL deve:
+
+- iniziare con `https://`;
+- contenere il dominio ngrok attuale;
+- finire con `/api/`.
+
+Esempio corretto:
+
+```text
+https://bobble-synopsis-recreate.ngrok-free.dev/api/
+```
+
+Esempio sbagliato:
+
+```text
+http://bobble-synopsis-recreate.ngrok-free.dev
+```
+
+## 6. Compilare l'app Android
+
+Aprire PowerShell nella cartella Android:
+
+```powershell
+cd "C:\Users\Utente\Downloads\pillmate-android-conversion (1)\pillmate-android-conversion"
+```
+
+Compilare:
+
+```powershell
+.\gradlew.bat --no-daemon assembleDebug --console plain
+```
+
+L'APK debug viene generato in:
+
+```text
+app\build\outputs\apk\debug\app-debug.apk
+```
+
+Questo APK puo' essere installato sul telefono.
+
+## 7. Installare l'app sul telefono con ADB
+
+Se il telefono e' collegato al PC con debug USB attivo:
+
+```powershell
+C:\Users\Utente\AppData\Local\Android\Sdk\platform-tools\adb.exe devices
+```
+
+Poi installare l'APK:
+
+```powershell
+C:\Users\Utente\AppData\Local\Android\Sdk\platform-tools\adb.exe install -r "C:\Users\Utente\Downloads\pillmate-android-conversion (1)\pillmate-android-conversion\app\build\outputs\apk\debug\app-debug.apk"
+```
+
+## Avvio rapido
+Su php su due terminali diversi:
+```
+npm run dev
+php artisan serve --host=0.0.0.0 --port=8000
+```
+Per ngrok
+```
+ngrok http 8000
+```
+Avvia xampp
+## Login
+
+Il login dell'app Android usa credenziali reali presenti nel database MySQL.
+
+La chiamata parte dall'app:
+
+```text
+POST /api/login
+```
+
+Laravel controlla la tabella utenti e restituisce un token.
+
+Il token viene poi usato per chiamare le API protette:
+
+```text
+GET /api/dashboard
+GET /api/paziente/terapie
+GET /api/paziente/storico
+GET /api/paziente/dispositivi
+GET /api/paziente/notifiche
+```
+
+## API principali
+
+Le route API si trovano in:
+
+```text
+C:\xampp\htdocs\gestionefarmaci\routes\api.php
+```
+
+Endpoint principali:
+
+```text
+POST /api/login
+GET  /api/me
+GET  /api/dashboard
+GET  /api/paziente/terapie
+GET  /api/paziente/storico
+GET  /api/paziente/dispositivi
+GET  /api/paziente/notifiche
+```
+
+Il controller API paziente si trova in:
+
+```text
+C:\xampp\htdocs\gestionefarmaci\app\Http\Controllers\Api\PazienteApiController.php
+```
+
+Il controller API login si trova in:
+
+```text
+C:\xampp\htdocs\gestionefarmaci\app\Http\Controllers\Api\AuthApiController.php
+```
+
+## File Android importanti
+
+Schermata principale, login e dashboard:
+
+```text
+app\src\main\java\com\pillmate\app\MainActivity.kt
+```
+
+Repository che chiama Laravel:
+
+```text
+app\src\main\java\com\pillmate\app\data\AppRepository.kt
+```
+
+Definizione delle API Retrofit:
+
+```text
+app\src\main\java\com\pillmate\app\network\ApiService.kt
+```
+
+Modelli dei dati:
+
+```text
+app\src\main\java\com\pillmate\app\model\Models.kt
+```
+
+Configurazione URL backend:
+
+```text
+app\build.gradle.kts
+```
+
+## File Laravel importanti
+
+Configurazione ambiente:
+
+```text
+.env
+```
+
+Route web:
+
+```text
+routes\web.php
+```
+
+Route API:
+
+```text
+routes\api.php
+```
+
+View paziente:
+
+```text
+resources\views\paziente
+```
+
+View medico:
+
+```text
+resources\views\medico
+```
+
+View admin:
+
+```text
+resources\views\admin
+```
+
+CSS e asset Vite:
+
+```text
+resources\css
+resources\js
+public\build
+```
+
+## Build CSS e icone Laravel
+
+Il sito usa Vite per compilare CSS e JavaScript. Le icone Lucide vengono caricate da:
+
+```text
+resources\js\app.js
+```
+
+Se da telefono spariscono CSS o icone, rigenerare gli asset:
+
+```powershell
+cd C:\xampp\htdocs\gestionefarmaci
+npm run build
+```
+
+Poi eliminare `public/hot`, se presente:
+
+```powershell
+Remove-Item C:\xampp\htdocs\gestionefarmaci\public\hot
+```
+
+Pulire la cache:
+
+```powershell
+php artisan optimize:clear
+```
+
+Nota importante:
+
+```text
+public/hot
+```
+
+fa usare a Laravel il server Vite locale, ad esempio:
+
+```text
+http://[::1]:5173
+```
+
+Da telefono questo indirizzo non funziona. Per usare ngrok e telefono vero, e' meglio usare gli asset compilati in `public/build`.
+
+## Problemi comuni
+
+### Errore: SQLSTATE[HY000] [2002]
+
+Significa che Laravel non riesce a collegarsi a MySQL.
+
+Controllare che MySQL sia avviato da XAMPP.
+
+Comando di verifica:
+
+```powershell
+C:\xampp\mysql\bin\mysqladmin.exe -u root ping
+```
+
+### CSS sparito da telefono
+
+Probabile causa:
+
+```text
+public/hot
+```
+
+Soluzione:
+
+```powershell
+cd C:\xampp\htdocs\gestionefarmaci
+npm run build
+Remove-Item C:\xampp\htdocs\gestionefarmaci\public\hot
+php artisan optimize:clear
+```
+
+### Icone non visibili
+
+Le icone dipendono da `resources/js/app.js` e dalla build Vite.
+
+Soluzione:
+
+```powershell
+cd C:\xampp\htdocs\gestionefarmaci
+npm run build
+php artisan optimize:clear
+```
+
+### Il browser avvisa che i dati non sono protetti
+
+Succede quando si usa `http://` invece di `https://`.
+
+Usare sempre:
+
+```text
+https://...
+```
+
+non:
+
+```text
+http://...
+```
+
+### L'app non riesce a fare login
+
+Controllare:
+
+- MySQL acceso;
+- Laravel acceso;
+- ngrok acceso;
+- `APP_URL` nel `.env` aggiornato;
+- `BASE_URL` Android aggiornato;
+- URL Android con `/api/` finale;
+- telefono con connessione internet.
+
+## Comandi rapidi
+
+Avvio Laravel:
+
+```powershell
+cd C:\xampp\htdocs\gestionefarmaci
+php artisan optimize:clear
+php artisan serve --host=0.0.0.0 --port=8000
+```
+
+Avvio ngrok:
+
+```powershell
+ngrok http 8000
+```
+
+Build Laravel:
+
+```powershell
+cd C:\xampp\htdocs\gestionefarmaci
+npm run build
+php artisan optimize:clear
+```
+
+Build Android:
+
+```powershell
+cd "C:\Users\Utente\Downloads\pillmate-android-conversion (1)\pillmate-android-conversion"
+.\gradlew.bat --no-daemon assembleDebug --console plain
+```
+
+Installazione Android con ADB:
+
+```powershell
+C:\Users\Utente\AppData\Local\Android\Sdk\platform-tools\adb.exe install -r "C:\Users\Utente\Downloads\pillmate-android-conversion (1)\pillmate-android-conversion\app\build\outputs\apk\debug\app-debug.apk"
+```
+
+## Ordine corretto di avvio
+
+```text
+1. Avviare MySQL da XAMPP
+2. Avviare Laravel con php artisan serve
+3. Avviare ngrok con ngrok http 8000
+4. Copiare l'URL https di ngrok
+5. Aggiornare APP_URL nel file .env Laravel
+6. Aggiornare BASE_URL nel file app/build.gradle.kts Android
+7. Eseguire php artisan optimize:clear
+8. Ricompilare l'app Android
+9. Installare/aprire l'app sul telefono
+```
+
+## Nota per la presentazione
+
+Il punto principale del progetto e' che l'app Android non contiene i dati e non accede direttamente a MySQL. Tutti i dati passano dal backend Laravel, che fa da livello intermedio sicuro tra app e database.
+
+Questo permette di:
+
+- centralizzare login e permessi;
+- usare lo stesso database del sito;
+- mantenere sincronizzati sito web e app;
+- mostrare al paziente solo i suoi dati;
+- esporre API riutilizzabili anche da altri dispositivi.

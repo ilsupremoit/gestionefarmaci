@@ -188,6 +188,10 @@
 
     .btn-logout:hover{background:#fee2e2}
 
+    .mobile-nav{
+        display:none;
+    }
+
     /* ── Main ── */
     .main{
         margin-left:240px;
@@ -908,7 +912,201 @@
 
     @media(max-width:768px){
         .sidebar{display:none}
-        .main{margin-left:0;padding:20px 16px;max-width:100vw}
+        .main{margin-left:0;padding:20px 16px 96px;max-width:100vw}
         .stats{grid-template-columns:1fr 1fr}
+        .mobile-nav{
+            display:grid;
+            grid-template-columns:repeat(5,1fr);
+            gap:4px;
+            position:fixed;
+            left:16px;
+            right:16px;
+            bottom:16px;
+            z-index:50;
+            padding:8px;
+            border:1px solid var(--border);
+            border-radius:22px;
+            background:rgba(255,255,255,.92);
+            box-shadow:0 10px 30px rgba(15,23,42,.18);
+            backdrop-filter:blur(10px)
+        }
+        .mobile-nav form{margin:0}
+        .mobile-nav-item{
+            min-width:0;
+            height:54px;
+            border:0;
+            border-radius:16px;
+            background:transparent;
+            color:var(--muted);
+            text-decoration:none;
+            font:inherit;
+            font-size:10px;
+            font-weight:700;
+            display:flex;
+            flex-direction:column;
+            align-items:center;
+            justify-content:center;
+            gap:4px
+        }
+        .mobile-nav-item i[data-lucide]{width:19px;height:19px}
+        .mobile-nav-item.active{
+            color:var(--accent);
+            background:#eff6ff
+        }
+        .mobile-nav-logout{
+            width:100%;
+            color:#b91c1c;
+            cursor:pointer
+        }
+    }
+    .storico-stats{
+        margin-bottom:24px
+    }
+
+    .history-mobile-list{
+        display:none
+    }
+
+    .history-card{
+        display:block;
+        color:inherit;
+        text-decoration:none;
+        background:#fff;
+        border:1px solid var(--border);
+        border-radius:16px;
+        padding:16px;
+        box-shadow:var(--shadow)
+    }
+
+    .history-card + .history-card{
+        margin-top:12px
+    }
+
+    .history-card-top{
+        display:flex;
+        align-items:flex-start;
+        justify-content:space-between;
+        gap:12px;
+        margin-bottom:14px
+    }
+
+    .history-date{
+        font-family:'Syne',sans-serif;
+        font-size:16px;
+        font-weight:700;
+        color:var(--text)
+    }
+
+    .history-day{
+        font-size:12px;
+        color:var(--muted);
+        margin-top:2px;
+        text-transform:capitalize
+    }
+
+    .history-drug{
+        display:flex;
+        align-items:flex-start;
+        gap:10px;
+        padding:12px;
+        background:#f8faff;
+        border:1px solid var(--border);
+        border-radius:12px;
+        margin-bottom:12px
+    }
+
+    .history-drug i[data-lucide]{
+        width:18px;
+        height:18px;
+        color:var(--accent);
+        margin-top:1px
+    }
+
+    .history-drug strong{
+        display:block;
+        font-size:14px;
+        color:var(--text)
+    }
+
+    .history-drug span{
+        display:block;
+        font-size:12px;
+        color:var(--muted);
+        margin-top:2px
+    }
+
+    .history-meta{
+        display:grid;
+        grid-template-columns:1fr 1fr;
+        gap:8px;
+        font-size:12px;
+        color:var(--muted)
+    }
+
+    .history-meta span{
+        background:#f8faff;
+        border:1px solid var(--border);
+        border-radius:10px;
+        padding:8px
+    }
+
+    .history-note{
+        display:flex;
+        flex-direction:column;
+        gap:6px;
+        margin-top:10px;
+        font-size:12px;
+        color:var(--muted)
+    }
+
+    .history-note span{
+        display:flex;
+        align-items:center;
+        gap:6px
+    }
+
+    .history-note i[data-lucide]{
+        width:13px;
+        height:13px;
+        color:var(--accent)
+    }
+
+    @media(max-width:768px){
+        .storico-stats{
+            gap:12px;
+            margin-bottom:18px
+        }
+        .storico-stats .stat-card{
+            padding:16px
+        }
+        .storico-stats .stat-value{
+            font-size:23px
+        }
+        .card{
+            padding:16px;
+            border-radius:16px
+        }
+        .filters{
+            display:grid;
+            grid-template-columns:1fr;
+            gap:10px
+        }
+        .filter-group{
+            width:100%
+        }
+        .filter-group .btn,
+        .filter-group a.btn{
+            width:100%;
+            justify-content:center
+        }
+        .table-wrap{
+            display:none
+        }
+        .history-mobile-list{
+            display:block
+        }
+        .history-meta{
+            grid-template-columns:1fr
+        }
     }
 </style>

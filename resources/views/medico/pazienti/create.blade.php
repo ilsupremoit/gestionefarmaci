@@ -54,6 +54,7 @@
         </form>
     </div>
 </aside>
+@include('medico._mobile-nav', ['active' => 'pazienti'])
 
 <main class="main">
     <div class="topbar">

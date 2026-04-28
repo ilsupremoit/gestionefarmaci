@@ -60,6 +60,7 @@
         </form>
     </div>
 </aside>
+@include('medico._mobile-nav', ['active' => 'dashboard'])
 
 <main class="main">
     <div class="breadcrumb">

@@ -73,3 +73,29 @@
         </form>
     </div>
 </aside>
+
+<nav class="mobile-nav" aria-label="Navigazione amministratore">
+    <a class="mobile-nav-item {{ ($active??'')==='dashboard' ? 'active':'' }}" href="{{ route('admin.dashboard') }}">
+        <i data-lucide="layout-dashboard"></i>
+        <span>Home</span>
+    </a>
+    <a class="mobile-nav-item {{ ($active??'')==='utenti' ? 'active':'' }}" href="{{ route('admin.utenti') }}">
+        <i data-lucide="users"></i>
+        <span>Utenti</span>
+    </a>
+    <a class="mobile-nav-item {{ ($active??'')==='pazienti' ? 'active':'' }}" href="{{ route('admin.pazienti') }}">
+        <i data-lucide="user-round"></i>
+        <span>Pazienti</span>
+    </a>
+    <a class="mobile-nav-item {{ ($active??'')==='notifiche' ? 'active':'' }}" href="{{ route('admin.notifiche') }}">
+        <i data-lucide="mail"></i>
+        <span>Msg</span>
+    </a>
+    <form method="POST" action="{{ route('logout') }}">
+        @csrf
+        <button type="submit" class="mobile-nav-item mobile-nav-logout">
+            <i data-lucide="log-out"></i>
+            <span>Esci</span>
+        </button>
+    </form>
+</nav>

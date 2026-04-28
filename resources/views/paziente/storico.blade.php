@@ -18,7 +18,7 @@
         </div>
     </div>
 
-    <div class="stats" style="grid-template-columns:repeat(4,1fr);margin-bottom:24px;">
+    <div class="stats storico-stats">
         <div class="stat-card">
             <div class="stat-top">
                 <span class="stat-label">Totale registrate</span>
@@ -149,6 +149,48 @@
                     @endforeach
                     </tbody>
                 </table>
+            </div>
+
+            <div class="history-mobile-list">
+                @foreach($assunzioni as $a)
+                    @php
+                        $farm = $a->somministrazione->terapia->farmaco ?? null;
+                        $ora  = $a->somministrazione->ora ?? '--';
+                    @endphp
+                    <a class="history-card" href="{{ route('paziente.assunzione.show', $a->id) }}">
+                        <div class="history-card-top">
+                            <div>
+                                <div class="history-date">{{ \Carbon\Carbon::parse($a->data_prevista)->format('d/m/Y') }}</div>
+                                <div class="history-day">{{ \Carbon\Carbon::parse($a->data_prevista)->isoFormat('dddd') }} · {{ substr($ora,0,5) }}</div>
+                            </div>
+                            <span class="stato-badge stato-{{ $a->stato }}">{{ statoLbl($a->stato) }}</span>
+                        </div>
+
+                        <div class="history-drug">
+                            <i data-lucide="pill"></i>
+                            <div>
+                                <strong>{{ $farm->nome ?? 'N/A' }}</strong>
+                                @if($farm?->dose)<span>{{ $farm->dose }}</span>@endif
+                            </div>
+                        </div>
+
+                        <div class="history-meta">
+                            <span>Erogazione: {{ $a->data_erogazione ? \Carbon\Carbon::parse($a->data_erogazione)->format('d/m H:i') : '-' }}</span>
+                            <span>Conferma: {{ $a->data_conferma ? \Carbon\Carbon::parse($a->data_conferma)->format('d/m H:i') : '-' }}</span>
+                        </div>
+
+                        @if($a->apertura_forzata || $a->note_evento)
+                            <div class="history-note">
+                                @if($a->apertura_forzata)
+                                    <span><i data-lucide="unlock"></i> Forzata medico</span>
+                                @endif
+                                @if($a->note_evento)
+                                    <span>{{ \Illuminate\Support\Str::limit($a->note_evento,60) }}</span>
+                                @endif
+                            </div>
+                        @endif
+                    </a>
+                @endforeach
             </div>
 
             <div class="pagination">

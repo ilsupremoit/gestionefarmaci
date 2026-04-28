@@ -54,6 +54,7 @@
         </form>
     </div>
 </aside>
+@include('medico._mobile-nav', ['active' => 'notifiche'])
 
 <main class="main">
     <div class="page-header">
