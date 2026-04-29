@@ -21,11 +21,7 @@ Contiene il backend Laravel:
 - autenticazione utenti;
 - gestione terapie, storico assunzioni, notifiche e dispositivi.
 
-```text
-C:\Users\Utente\Downloads\pillmate-android-conversion (1)\pillmate-android-conversion
-```
-
-Contiene l'app Android:
+ L'app Android:
 
 - schermata login;
 - dashboard paziente;
