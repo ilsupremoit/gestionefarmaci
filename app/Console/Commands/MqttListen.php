@@ -22,11 +22,14 @@ class MqttListen extends Command
             try {
                 $this->info('[MQTT] Listener avviato. In ascolto su pillmate/+/...');
 
+                // Usa client_id dedicato al listener (diverso dal publisher)
+                // e aumenta i timeout per non perdere la connessione tra telemetrie
                 config([
-                    'mqtt-client.connections.default.client_id' => env('MQTT_LISTENER_CLIENT_ID', 'laravel-pillmate-listener'),
-                    'mqtt-client.connections.default.connection_settings.connect_timeout' => 10,
-                    'mqtt-client.connections.default.connection_settings.socket_timeout' => 5,
-                    'mqtt-client.connections.default.connection_settings.keep_alive_interval' => 60,
+                    'mqtt-client.connections.default.client_id'                                        => env('MQTT_LISTENER_CLIENT_ID', 'laravel-pillmate-listener-' . getmypid()),
+                    'mqtt-client.connections.default.connection_settings.connect_timeout'              => 30,
+                    'mqtt-client.connections.default.connection_settings.socket_timeout'               => 120,
+                    'mqtt-client.connections.default.connection_settings.keep_alive_interval'          => 30,
+                    'mqtt-client.connections.default.connection_settings.resend_timeout'               => 15,
                 ]);
 
                 $mqtt = MQTT::connection();

@@ -16,7 +16,7 @@ return [
             'host' => env('MQTT_HOST'),
             'port' => env('MQTT_PORT', 1883),
 
-            'protocol' => MqttClient::MQTT_3_1,
+            'protocol' => MqttClient::MQTT_3_1_1,
 
             'client_id' => env('MQTT_CLIENT_ID'),
 
