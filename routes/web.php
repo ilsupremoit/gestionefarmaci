@@ -21,6 +21,14 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\AdminController;
 
 
+use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Schedule;
+
+Schedule::command('pillmate:scheduler')
+    ->everyMinute()
+    ->withoutOverlapping()
+    ->appendOutputTo(storage_path('logs/pillmate-scheduler.log'));
+
 Route::get('/comuni/cerca', [ComuneController::class, 'cerca']);
 // ── Root ─────────────────────────────────────────────────────────────────────
 Route::get('/', function () {

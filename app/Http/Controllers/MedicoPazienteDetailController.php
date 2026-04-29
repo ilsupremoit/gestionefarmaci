@@ -262,7 +262,7 @@ class MedicoPazienteDetailController extends Controller
         return [
             'prese'   => $base()->whereIn('stato', ['assunta', 'erogata'])->count(),
             'saltate' => $base()->whereIn('stato', ['saltata', 'non_ritirata'])->count(),
-            'forzate' => $base()->where(fn($q) => $q->where('forzata_medico', true)->orWhere('apertura_forzata', true))->count(),
+            'forzate' => $base()->where(fn($q) => $q->where('apertura_forzata', true))->count(),
             'oggi'    => $base()->whereDate('data_prevista', today())->count(),
         ];
     }
