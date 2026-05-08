@@ -32,6 +32,7 @@ class DashboardController extends Controller
             ->get();
 
         $assunzioniPreviste = $assunzioniOggi->count();
+        $dosiPrese   = $assunzioniOggi->whereIn('stato', ['assunta', 'erogata'])->count();
         $dosiSaltate = $assunzioniOggi->whereIn('stato', ['saltata', 'non_ritirata'])->count();
 
         // Ultimi 5 pazienti
@@ -43,7 +44,7 @@ class DashboardController extends Controller
 
         return view('medico.dashboard', compact(
             'medico', 'numPazienti', 'terapieAttive',
-            'assunzioniPreviste', 'dosiSaltate', 'ultimiPazienti'
+            'assunzioniPreviste', 'dosiPrese', 'dosiSaltate', 'ultimiPazienti'
         ));
     }
 }

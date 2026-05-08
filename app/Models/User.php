@@ -46,6 +46,17 @@ class User extends Authenticatable
         );
     }
 
+    /** Pazienti collegati al familiare (tramite familiari_pazienti) */
+    public function pazientiFamiliari()
+    {
+        return $this->belongsToMany(
+            Paziente::class,
+            'familiari_pazienti',
+            'id_familiare',
+            'id_paziente'
+        )->withPivot('grado_parentela');
+    }
+
     /** Profilo paziente (se ruolo = paziente) */
     public function paziente()
     {

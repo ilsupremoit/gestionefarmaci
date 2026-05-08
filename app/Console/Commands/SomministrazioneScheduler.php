@@ -10,7 +10,8 @@ use Carbon\Carbon;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use PhpMqtt\Client\Facades\MQTT;
+use PhpMqtt\Client\MqttClient;
+use PhpMqtt\Client\ConnectionSettings;
 
 /**
  * Scheduler PillMate — gira ogni minuto.
@@ -48,9 +49,14 @@ class SomministrazioneScheduler extends Command
     // Minuti di tolleranza oltre i quali la dose è "saltata"
     private const MINUTI_SALTATA = 30;
 
-    // Finestra entro cui inviare l'allarme rispetto all'orario previsto.
-    // 180 secondi = 3 minuti. Utile per non perdere l'orario durante i test.
-    private const SECONDI_FINESTRA = 180;
+    // Tolleranza PASSATA: quanti secondi fa cercare assunzioni scadute non ancora allarmate.
+    // Serve per recuperare il minuto esatto se lo scheduler ha un piccolo ritardo.
+    // Es: sveglia alle 11:30, scheduler gira alle 11:30:45 → la trova comunque.
+    private const SECONDI_FINESTRA_PASSATO = 90;
+
+    // Tolleranza FUTURA: quanti secondi in anticipo è permesso suonare.
+    // 0 = mai in anticipo. Teniamo 5 sec solo come margine di sicurezza per clock drift.
+    private const SECONDI_FINESTRA_FUTURO = 5;
 
     // Ogni quanti minuti suona di nuovo se il paziente non ha ancora risposto
     private const MINUTI_REMINDER = 5;
@@ -175,8 +181,8 @@ class SomministrazioneScheduler extends Command
     // ─────────────────────────────────────────────────────────────
     private function attivaAllarmiInScadenza(Carbon $now): void
     {
-        $inizioFinestra = $now->copy()->subSeconds(self::SECONDI_FINESTRA);
-        $fineFinestra = $now->copy()->addSeconds(self::SECONDI_FINESTRA);
+        $inizioFinestra = $now->copy()->subSeconds(self::SECONDI_FINESTRA_PASSATO);
+        $fineFinestra   = $now->copy()->addSeconds(self::SECONDI_FINESTRA_FUTURO);
 
         $this->line(
             'Cerco allarmi in scadenza tra '
@@ -216,10 +222,17 @@ class SomministrazioneScheduler extends Command
     private function inviaReminder(Carbon $now): void
     {
         $limiteReminder = $now->copy()->subMinutes(self::MINUTI_REMINDER);
+        // Non mandare reminder per assunzioni più vecchie di MINUTI_SALTATA:
+        // a quel punto marcaSaltateScadute() le chiuderà al prossimo giro.
+        $limiteVecchio  = $now->copy()->subMinutes(self::MINUTI_SALTATA);
 
         $assunzioni = Assunzione::with('somministrazione.terapia.farmaco')
             ->where('stato', 'allarme_attivo')
             ->where('data_allarme', '<=', $limiteReminder)
+            ->where('data_allarme', '>', $limiteVecchio)   // ← esclude le zombie
+            ->whereHas('somministrazione.terapia', function ($q) {
+                $q->where('attiva', true);                 // ← solo terapie attive
+            })
             ->get();
 
         $this->line('Reminder da inviare trovati: ' . $assunzioni->count());
@@ -293,28 +306,51 @@ class SomministrazioneScheduler extends Command
             return;
         }
 
+        // Cerca prima uno scomparto con quantità > 0 (caso normale)
         $scomparto = ScompartoDispositivo::where('id_dispositivo', $dispositivo->id)
             ->where('id_farmaco', $farmaco->id)
             ->where('quantita', '>', 0)
             ->orderBy('numero_scomparto')
             ->first();
 
+        // Fallback: accetta scomparto configurato anche con quantità = 0
+        // (utile durante sviluppo/test o se la sync quantità è in ritardo)
         if (!$scomparto) {
-            $this->warn("  → Scomparto vuoto o non trovato: {$farmaco->nome} (paziente {$terapia->id_paziente})");
+            $scomparto = ScompartoDispositivo::where('id_dispositivo', $dispositivo->id)
+                ->where('id_farmaco', $farmaco->id)
+                ->orderBy('numero_scomparto')
+                ->first();
 
-            Log::warning('PillMate allarme non inviato: scomparto vuoto o non trovato', [
+            if ($scomparto) {
+                $this->warn("  → Scomparto {$scomparto->numero_scomparto} trovato ma quantita=0 per: {$farmaco->nome}. Invio allarme ugualmente.");
+
+                Log::warning('PillMate allarme inviato con scomparto a quantita=0', [
+                    'id_assunzione'   => $assunzione->id,
+                    'id_paziente'     => $terapia->id_paziente,
+                    'id_dispositivo'  => $dispositivo->id,
+                    'id_farmaco'      => $farmaco->id,
+                    'farmaco'         => $farmaco->nome,
+                    'numero_scomparto'=> $scomparto->numero_scomparto,
+                ]);
+            }
+        }
+
+        if (!$scomparto) {
+            $this->warn("  → Scomparto non configurato per: {$farmaco->nome} (paziente {$terapia->id_paziente})");
+
+            Log::warning('PillMate allarme non inviato: nessuno scomparto configurato per il farmaco', [
                 'id_assunzione' => $assunzione->id,
-                'id_paziente' => $terapia->id_paziente,
-                'id_dispositivo' => $dispositivo->id,
-                'id_farmaco' => $farmaco->id,
-                'farmaco' => $farmaco->nome,
+                'id_paziente'   => $terapia->id_paziente,
+                'id_dispositivo'=> $dispositivo->id,
+                'id_farmaco'    => $farmaco->id,
+                'farmaco'       => $farmaco->nome,
             ]);
 
             $this->creaNotificaScompartoVuoto($terapia->id_paziente, $farmaco->nome);
 
             $assunzione->update([
-                'stato' => 'saltata',
-                'note_evento' => 'Scomparto vuoto al momento dell\'allarme',
+                'stato'      => 'saltata',
+                'note_evento'=> 'Nessuno scomparto configurato per questo farmaco',
             ]);
 
             return;
@@ -350,7 +386,32 @@ class SomministrazioneScheduler extends Command
                 'quantita_scomparto' => $scomparto->quantita,
             ]);
 
-            MQTT::publish($topic, $jsonPayload);
+            // ── Client MQTT dedicato usa-e-getta ─────────────────────────
+            // NON usiamo MQTT::publish() (facade singleton condiviso col listener)
+            // perché HiveMQ disconnette il client se lo stesso client_id si
+            // connette due volte. Creiamo un client effimero con ID univoco.
+            $clientId = 'pillmate-scheduler-' . uniqid();
+            $settings = (new ConnectionSettings())
+                ->setUsername(env('MQTT_AUTH_USERNAME'))
+                ->setPassword(env('MQTT_AUTH_PASSWORD'))
+                ->setUseTls(true)
+                ->setTlsSelfSignedAllowed(true)
+                ->setTlsVerifyPeer(false)
+                ->setTlsVerifyPeerName(false)
+                ->setConnectTimeout(10)
+                ->setSocketTimeout(10)
+                ->setKeepAliveInterval(10);
+
+            $mqttClient = new MqttClient(
+                env('MQTT_HOST'),
+                (int) env('MQTT_PORT', 8883),
+                $clientId
+            );
+
+            $mqttClient->connect($settings, true); // clean session = true
+            $mqttClient->publish($topic, $jsonPayload, 1); // QoS 1 per garanzia
+            $mqttClient->disconnect();
+            // ─────────────────────────────────────────────────────────────
 
             $assunzione->update([
                 'stato' => 'allarme_attivo',

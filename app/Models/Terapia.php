@@ -33,6 +33,11 @@ class Terapia extends Model
         return $this->belongsTo(Farmaco::class, 'id_farmaco');
     }
 
+    public function medico(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'id_medico');
+    }
+
     public function somministrazioni(): HasMany
     {
         return $this->hasMany(Somministrazione::class, 'id_terapia');

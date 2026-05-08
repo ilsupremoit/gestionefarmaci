@@ -34,9 +34,9 @@ class AuthApiController extends Controller
             ], 403);
         }
 
-        if ($user->ruolo !== 'paziente') {
+        if (!in_array($user->ruolo, ['paziente', 'familiare'], true)) {
             return response()->json([
-                'message' => 'Questa app e disponibile solo per il profilo paziente.',
+                'message' => 'Questa app e disponibile solo per pazienti e familiari.',
             ], 403);
         }
 
@@ -72,3 +72,5 @@ class AuthApiController extends Controller
         ]);
     }
 }
+
+

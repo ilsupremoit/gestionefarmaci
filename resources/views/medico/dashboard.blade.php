@@ -114,6 +114,17 @@
 
         <div class="stat-card">
             <div class="stat-top">
+                <span class="stat-label">Pillole prese</span>
+                <div class="stat-ico green">
+                    <i data-lucide="check-circle-2"></i>
+                </div>
+            </div>
+            <div class="stat-value">{{ $dosiPrese }}</div>
+            <div class="stat-sub">confermate oggi</div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-top">
                 <span class="stat-label">Dosi saltate</span>
                 <div class="stat-ico red">
                     <i data-lucide="alert-triangle"></i>

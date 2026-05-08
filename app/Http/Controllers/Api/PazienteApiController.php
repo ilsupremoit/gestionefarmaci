@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Assunzione;
 use App\Models\Dispositivo;
 use App\Models\Notifica;
+use App\Models\Paziente;
 use App\Models\Terapia;
 use Illuminate\Http\Request;
 
@@ -14,15 +15,36 @@ class PazienteApiController extends Controller
     public function dashboard(Request $request)
     {
         $user = $request->user();
-        $paziente = optional($user->paziente);
+        $paziente = $this->resolvePaziente($request);
+
+        if (!$paziente) {
+            return response()->json([
+                'message' => 'Nessun paziente collegato a questo account.',
+            ], 404);
+        }
+
+        $paziente->load('utente');
 
         return response()->json([
             'ruolo' => $user->ruolo,
             'titolo' => 'Dashboard paziente',
             'messaggio' => 'Dati caricati dal backend Laravel',
+            'paziente' => [
+                'id' => $paziente->id,
+                'nome' => $paziente->utente->nome ?? '',
+                'cognome' => $paziente->utente->cognome ?? '',
+                'email' => $paziente->utente->email ?? '',
+                'telefono' => $paziente->utente->telefono ?? '',
+                'dataNascita' => optional($paziente->data_nascita)?->format('Y-m-d'),
+                'indirizzo' => $paziente->indirizzo,
+                'codiceFiscale' => $paziente->codice_fiscale,
+                'noteMediche' => $paziente->note_mediche,
+            ],
             'statistiche' => [
                 ['label' => 'Terapie attive', 'value' => (string) Terapia::where('id_paziente', $paziente->id)->where('attiva', true)->count()],
-                ['label' => 'Assunzioni oggi', 'value' => (string) Assunzione::whereDate('data_prevista', now()->toDateString())->count()],
+                ['label' => 'Assunzioni oggi', 'value' => (string) Assunzione::whereHas('somministrazione.terapia', function ($query) use ($paziente) {
+                    $query->where('id_paziente', $paziente->id);
+                })->whereDate('data_prevista', now()->toDateString())->count()],
                 ['label' => 'Notifiche', 'value' => (string) Notifica::where('id_utente', $user->id)->count()],
                 ['label' => 'Dispositivi', 'value' => (string) Dispositivo::where('id_paziente', $paziente->id)->count()],
             ],
@@ -31,7 +53,10 @@ class PazienteApiController extends Controller
 
     public function terapie(Request $request)
     {
-        $paziente = optional($request->user()->paziente);
+        $paziente = $this->resolvePaziente($request);
+        if (!$paziente) {
+            return response()->json([]);
+        }
 
         return Terapia::with('farmaco')
             ->where('id_paziente', $paziente->id)
@@ -52,7 +77,10 @@ class PazienteApiController extends Controller
 
     public function storico(Request $request)
     {
-        $paziente = optional($request->user()->paziente);
+        $paziente = $this->resolvePaziente($request);
+        if (!$paziente) {
+            return response()->json([]);
+        }
 
         return Assunzione::with('somministrazione.terapia.farmaco')
             ->whereHas('somministrazione.terapia', function ($query) use ($paziente) {
@@ -76,7 +104,10 @@ class PazienteApiController extends Controller
 
     public function dispositivi(Request $request)
     {
-        $paziente = optional($request->user()->paziente);
+        $paziente = $this->resolvePaziente($request);
+        if (!$paziente) {
+            return response()->json([]);
+        }
 
         return Dispositivo::where('id_paziente', $paziente->id)
             ->get()
@@ -111,5 +142,20 @@ class PazienteApiController extends Controller
                 ];
             })
             ->values();
+    }
+
+    private function resolvePaziente(Request $request): ?Paziente
+    {
+        $user = $request->user();
+
+        if ($user->ruolo === 'paziente') {
+            return $user->paziente;
+        }
+
+        if ($user->ruolo === 'familiare') {
+            return $user->pazientiFamiliari()->with('utente')->first();
+        }
+
+        return null;
     }
 }

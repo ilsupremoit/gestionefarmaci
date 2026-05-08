@@ -50,7 +50,7 @@
                 </div>
 
                 <div class="terapia-meta">
-                    <span><i data-lucide="calendar" style="width:13px;height:13px;"></i> Dal {{ $t->data_inizio->format('d/m/Y') }}@if($t->data_fine) al {{ $t->data_fine->format('d/m/Y') }}@endif</span>
+                    <span><i data-lucide="calendar" style="width:13px;height:13px;"></i> Dal {{ $t->data_inizio?->format('d/m/Y') ?? 'N/D' }}@if($t->data_fine) al {{ $t->data_fine->format('d/m/Y') }}@endif</span>
                     <span><i data-lucide="pill" style="width:13px;height:13px;"></i> {{ $t->quantita }} pillola/e per dose</span>
                     @if($t->frequenza)<span><i data-lucide="clock-3" style="width:13px;height:13px;"></i> {{ $t->frequenza }}</span>@endif
                     @if($t->medico)<span><i data-lucide="stethoscope" style="width:13px;height:13px;"></i> Dr. {{ $t->medico->cognome }}</span>@endif
@@ -117,7 +117,7 @@
                     </div>
 
                     <div class="terapia-meta">
-                        <span><i data-lucide="calendar" style="width:13px;height:13px;"></i> Dal {{ $t->data_inizio->format('d/m/Y') }}@if($t->data_fine) al {{ $t->data_fine->format('d/m/Y') }}@endif</span>
+                        <span><i data-lucide="calendar" style="width:13px;height:13px;"></i> Dal {{ $t->data_inizio?->format('d/m/Y') ?? 'N/D' }}@if($t->data_fine) al {{ $t->data_fine->format('d/m/Y') }}@endif</span>
                         <span><i data-lucide="pill" style="width:13px;height:13px;"></i> {{ $t->quantita }} pillola/e</span>
                         @if($t->medico)<span><i data-lucide="stethoscope" style="width:13px;height:13px;"></i> Dr. {{ $t->medico->cognome }}</span>@endif
                     </div>
