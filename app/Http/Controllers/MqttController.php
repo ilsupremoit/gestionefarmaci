@@ -139,11 +139,20 @@ class MqttController extends Controller
         $nuovaQuantita = (int) ($data['quantita'] ?? 0);  // quantità rimasta dopo erogazione
         $metodo        = $data['metodo_attivazione'] ?? 'sconosciuto';
 
+        // FIX: se id_farmaco non è nel payload, recuperalo dal DB tramite lo scomparto
+        if ($idFarmaco <= 0 && $scompartoNum > 0) {
+            $idFarmaco = (int) ScompartoDispositivo::where('id_dispositivo', $dispositivo->id)
+                ->where('numero_scomparto', $scompartoNum)
+                ->value('id_farmaco');
+        }
+
         // 1. Aggiorna la quantità dello scomparto nel DB
         //    Prende la più piccola tra quella attuale e quella arrivata (per sicurezza)
         $scomparto = ScompartoDispositivo::where('id_dispositivo', $dispositivo->id)
             ->where('numero_scomparto', $scompartoNum)
             ->first();
+
+        $qtaFinale = $nuovaQuantita;
 
         if ($scomparto) {
             $qtaAggiornata = min((int) ($scomparto->quantita ?? 0), $nuovaQuantita);
@@ -160,28 +169,52 @@ class MqttController extends Controller
         }
 
         // 2. Cerca l'assunzione "allarme_attivo" più recente per quel farmaco/dispositivo
-        $assunzione = Assunzione::where('id_dispositivo', $dispositivo->id)
-            ->where('stato', 'allarme_attivo')
-            ->whereHas('somministrazione.terapia', fn($q) => $q->where('id_farmaco', $idFarmaco))
+        // FIX: cerca prima per scomparto_numero (più preciso), poi per id_farmaco
+        $assunzione = null;
+
+        if ($scompartoNum > 0) {
+            $assunzione = Assunzione::whereHas('somministrazione.terapia', function ($q) use ($dispositivo) {
+                $q->where('id_paziente', $dispositivo->id_paziente);
+            })
+            ->where(function ($q) {
+                $q->whereIn('stato', ['allarme_attivo', 'in_attesa'])
+                  ->orWhere(function ($q2) {
+                      $q2->where('stato', 'saltata')
+                         ->where('allarme_inviato', true)
+                         ->where('data_allarme', '>=', now()->subMinutes(60));
+                  });
+            })
+            ->where('scomparto_numero', $scompartoNum)
+            ->orderByRaw("FIELD(stato,'allarme_attivo','in_attesa','saltata')")
             ->orderByDesc('data_prevista')
             ->first();
+        }
 
-        // Se non trova allarme_attivo, prova in_attesa (erogazione manuale senza allarme)
-        if (!$assunzione) {
-            $assunzione = Assunzione::where('id_dispositivo', $dispositivo->id)
-                ->where('stato', 'in_attesa')
-                ->whereHas('somministrazione.terapia', fn($q) => $q->where('id_farmaco', $idFarmaco))
-                ->orderByDesc('data_prevista')
-                ->first();
+        if (!$assunzione && $idFarmaco > 0) {
+            $assunzione = Assunzione::whereHas('somministrazione.terapia', function ($q) use ($dispositivo, $idFarmaco) {
+                $q->where('id_paziente', $dispositivo->id_paziente)
+                  ->where('id_farmaco', $idFarmaco);
+            })
+            ->where(function ($q) {
+                $q->whereIn('stato', ['allarme_attivo', 'in_attesa'])
+                  ->orWhere(function ($q2) {
+                      $q2->where('stato', 'saltata')
+                         ->where('allarme_inviato', true)
+                         ->where('data_allarme', '>=', now()->subMinutes(60));
+                  });
+            })
+            ->orderByRaw("FIELD(stato,'allarme_attivo','in_attesa','saltata')")
+            ->orderByDesc('data_prevista')
+            ->first();
         }
 
         if ($assunzione) {
             $isForzata = in_array($metodo, ['MQTT_DIRETTO']);
             $assunzione->update([
-                'stato'          => $isForzata ? 'apertura_forzata' : 'erogata',
-                'data_erogazione'=> now(),
-                'data_conferma'  => now(),
-                'confermata_da'  => in_array($metodo, ['BOTTONE', 'PIR']) ? 'paziente' : 'sistema',
+                'stato'              => $isForzata ? 'apertura_forzata' : 'assunta',
+                'data_erogazione'    => now(),
+                'data_conferma'      => now(),
+                'confermata_da'      => in_array($metodo, ['BOTTONE', 'PIR']) ? 'paziente' : 'sistema',
                 'quantita_erogata'   => $nuovaQuantita,
                 'scomparto_numero'   => $scompartoNum,
                 'forzata_medico'     => $isForzata,
@@ -200,6 +233,7 @@ class MqttController extends Controller
             DB::table('eventi_dispositivo')->insert([
                 'id_dispositivo'     => $dispositivo->id,
                 'id_paziente'        => $dispositivo->id_paziente,
+                'topic'              => "pillmate/{$dispositivo->codice_seriale}/eventi",
                 'azione'             => 'pillola_erogata',
                 'metodo_attivazione' => $metodo,
                 'severita'           => 'info',

@@ -2,12 +2,15 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Assunzione;
 use App\Models\Dispositivo;
 use App\Models\Farmaco;
 use App\Models\ScompartoDispositivo;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
+use PhpMqtt\Client\MqttClient;
+use PhpMqtt\Client\ConnectionSettings;
 
 class DispositivoController extends Controller
 {
@@ -55,11 +58,75 @@ class DispositivoController extends Controller
             );
         }
 
+        // ── Resetta allarmi pendenti prima di riconfigurare ──────────────
+        // Se esiste un'assunzione in allarme_attivo per questo dispositivo,
+        // invia disattiva_allarme all'ESP32 e segna le assunzioni come saltate
+        // (non hanno avuto conferma), così lo scheduler non le ri-allarma.
+        $this->resetlaAllarmiPendenti($dispositivo);
+
+        // Invia la nuova configurazione scomparti
         app(MqttController::class)->configuraScomparti(new Request(), $idDispositivo);
 
         return redirect()
             ->route('dispositivi.scomparti', $idDispositivo)
             ->with('success', 'Configurazione salvata e inviata al dispositivo.');
+    }
+
+    /**
+     * Disattiva eventuali allarmi attivi sull'ESP32 e resetta le assunzioni
+     * allarme_attivo/in_attesa stantie nel DB per evitare re-allarmi indesiderati
+     * dopo una riconfigurazione degli scomparti.
+     */
+    private function resetlaAllarmiPendenti(Dispositivo $dispositivo): void
+    {
+        $haAllarmiAttivi = Assunzione::where('id_dispositivo', $dispositivo->id)
+            ->whereIn('stato', ['allarme_attivo'])
+            ->exists();
+
+        if ($haAllarmiAttivi) {
+            // 1. Invia disattiva_allarme all'ESP32 con client dedicato
+            try {
+                $clientId = 'pillmate-reset-' . uniqid();
+                $settings = (new ConnectionSettings())
+                    ->setUsername(env('MQTT_AUTH_USERNAME'))
+                    ->setPassword(env('MQTT_AUTH_PASSWORD'))
+                    ->setUseTls(true)
+                    ->setTlsSelfSignedAllowed(true)
+                    ->setTlsVerifyPeer(false)
+                    ->setTlsVerifyPeerName(false)
+                    ->setConnectTimeout(10)
+                    ->setSocketTimeout(10);
+
+                $client = new MqttClient(
+                    env('MQTT_HOST'),
+                    (int) env('MQTT_PORT', 8883),
+                    $clientId
+                );
+
+                $client->connect($settings, true);
+                $client->publish(
+                    $dispositivo->topicComandi(),
+                    json_encode(['comando' => 'disattiva_allarme']),
+                    1
+                );
+                $client->disconnect();
+            } catch (\Throwable $e) {
+                // Non blocchiamo il salvataggio se il broker non è raggiungibile
+                \Log::warning('DispositivoController: disattiva_allarme fallito durante reset', [
+                    'dispositivo' => $dispositivo->codice_seriale,
+                    'errore'      => $e->getMessage(),
+                ]);
+            }
+
+            // 2. Segna le assunzioni allarme_attivo come saltate nel DB
+            // così lo scheduler non le trova più e non invia reminder
+            Assunzione::where('id_dispositivo', $dispositivo->id)
+                ->where('stato', 'allarme_attivo')
+                ->update([
+                    'stato'       => 'saltata',
+                    'note_evento' => 'Allarme annullato — scomparti riconfigurati dal medico',
+                ]);
+        }
     }
 
     /**

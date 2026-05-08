@@ -254,8 +254,14 @@ class SomministrazioneScheduler extends Command
     {
         $limite = $now->copy()->subMinutes(self::MINUTI_SALTATA);
 
+        // FIX RACE CONDITION: escludi assunzioni che hanno già data_erogazione impostata.
+        // Può succedere che l'ESP32 eroghi la pillola proprio nell'ultimo minuto della
+        // finestra dei 30 min, e il messaggio MQTT arrivi DOPO che questo scheduler
+        // ha già chiamato marcaSaltateScadute(). Senza questa esclusione, l'assunzione
+        // verrebbe segnata "saltata" anche se la pillola è stata presa fisicamente.
         $n = Assunzione::whereIn('stato', ['in_attesa', 'allarme_attivo'])
             ->where('data_prevista', '<', $limite)
+            ->whereNull('data_erogazione')   // ← FIX: non toccare assunzioni già erogate fisicamente
             ->update([
                 'stato' => 'saltata',
                 'note_evento' => 'Dose non confermata entro ' . self::MINUTI_SALTATA . ' minuti',

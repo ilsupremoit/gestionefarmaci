@@ -10,6 +10,7 @@ class Kernel extends ConsoleKernel
     protected $commands = [
         \App\Console\Commands\MqttListen::class,
         \App\Console\Commands\SomministrazioneScheduler::class,
+        \App\Console\Commands\PillmatePulizia::class,
     ];
 
     protected function schedule(Schedule $schedule): void

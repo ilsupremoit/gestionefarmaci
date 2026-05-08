@@ -8,6 +8,7 @@ use App\Models\Notifica;
 use App\Models\ScompartoDispositivo;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use PhpMqtt\Client\Facades\MQTT;
 use Throwable;
 
@@ -52,10 +53,11 @@ class MqttListen extends Command
                     $this->salvaEventoRaw($dispositivo, $payload, $topic);
 
                     match ($payload['azione']) {
-                        'pillola_erogata' => $this->gestisciErogazione($dispositivo, $payload),
-                        'mappa_scomparti' => $this->sincronizzaMappa($dispositivo, $payload),
-                        'richiesta_ricarica' => $this->gestisciRichiestaRicarica($dispositivo, $payload),
+                        'pillola_erogata'   => $this->gestisciErogazione($dispositivo, $payload),
+                        'mappa_scomparti'   => $this->sincronizzaMappa($dispositivo, $payload),
+                        'richiesta_ricarica'=> $this->gestisciRichiestaRicarica($dispositivo, $payload),
                         'errore_erogazione' => $this->gestisciErroreFarmaco($dispositivo, $payload),
+                        'pillola_mancata'   => $this->gestisciPillolaMancata($dispositivo, $payload),
                         default => $this->line("[MQTT] Azione non gestita: {$payload['azione']}"),
                     };
                 }, 1);
@@ -98,7 +100,7 @@ class MqttListen extends Command
                     $this->line("[TELEM] {$serial} | T:" . ($payload['temperatura'] ?? '-') . ' H:' . ($payload['umidita'] ?? '-'));
                 }, 0);
 
-                $mqtt->subscribe('pillmate/+/stato', function (string $topic, string $raw) {
+                $mqtt->subscribe('pillmate/+/stato', function (string $topic, string $raw) use ($mqtt) {
                     $serial = $this->estraiSeriale($topic);
                     $dispositivo = Dispositivo::where('codice_seriale', $serial)->first();
 
@@ -147,51 +149,159 @@ class MqttListen extends Command
 
     private function gestisciErogazione(Dispositivo $dispositivo, array $payload): void
     {
-        $idFarmaco = (int) ($payload['id_farmaco'] ?? 0);
-        $numScomparto = (int) ($payload['scomparto_usato'] ?? 0);
-        $metodo = (string) ($payload['metodo_attivazione'] ?? 'sconosciuto');
-        // Il firmware manda "quantita" (quantità rimasta), non "quantita_rimanente"
-        $quantitaRimanente = max(0, (int) ($payload['quantita'] ?? $payload['quantita_rimanente'] ?? 0));
-        $timestamp = now();
+        Log::debug('gestisciErogazione: payload ricevuto', $payload);
 
+        $idFarmaco    = (int) ($payload['id_farmaco'] ?? 0);
+        // FIX: supporta sia "scomparto_usato" che "scomparto_numero" (entrambi 1-based)
+        $numScomparto = (int) ($payload['scomparto_usato'] ?? $payload['scomparto_numero'] ?? 0);
+        $metodo       = (string) ($payload['metodo_attivazione'] ?? 'sconosciuto');
+        // FIX: supporta sia "quantita" (nuovo standard) che "quantita_rimanente" (legacy)
+        $quantitaRimanente = max(0, (int) ($payload['quantita'] ?? $payload['quantita_rimanente'] ?? 0));
+        $timestamp         = now();
+
+        Log::debug('gestisciErogazione: dati estratti', [
+            'id_farmaco' => $idFarmaco,
+            'num_scomparto' => $numScomparto,
+            'metodo' => $metodo,
+            'quantita_rimanente' => $quantitaRimanente,
+        ]);
+
+        // ── 1. Aggiorna quantità scomparto ───────────────────────────────
         if ($numScomparto > 0) {
             ScompartoDispositivo::where('id_dispositivo', $dispositivo->id)
                 ->where('numero_scomparto', $numScomparto)
                 ->update([
                     'quantita' => $quantitaRimanente,
-                    'pieno' => $quantitaRimanente > 0,
+                    'pieno'    => $quantitaRimanente > 0,
                 ]);
         }
 
-        if ($idFarmaco > 0 && $dispositivo->id_paziente) {
-            $assunzione = Assunzione::whereHas('somministrazione.terapia', function ($q) use ($dispositivo, $idFarmaco) {
-                $q->where('id_paziente', $dispositivo->id_paziente)
-                    ->where('id_farmaco', $idFarmaco)
-                    ->where('attiva', true);
-            })
-                ->whereIn('stato', ['in_attesa', 'allarme_attivo'])
+        // ── 2. Ricava id_farmaco dal DB se mancante nel payload ──────────
+        // Questo avviene quando il PIR o il BOTTONE scattano senza che l'ESP32
+        // includa l'id_farmaco (non dovrebbe più succedere dopo il fix C++,
+        // ma lo teniamo come safety net).
+        if ($idFarmaco <= 0 && $numScomparto > 0) {
+            $idFarmaco = (int) ScompartoDispositivo::where('id_dispositivo', $dispositivo->id)
+                ->where('numero_scomparto', $numScomparto)
+                ->value('id_farmaco');
+
+            if ($idFarmaco > 0) {
+                $this->line("[MQTT] id_farmaco ricavato dallo scomparto {$numScomparto}: #{$idFarmaco}");
+                Log::debug('gestisciErogazione: id_farmaco ricavato dal DB', ['id_farmaco' => $idFarmaco]);
+            }
+        }
+
+        // ── 3. Trova l'assunzione con 3 livelli di fallback ──────────────
+        // Livello A → match per scomparto_numero (salvato dallo scheduler)
+        // Livello B → match per id_farmaco nella terapia
+        // Livello C → qualsiasi assunzione attiva del paziente (più imminente)
+        $assunzione = null;
+
+        if ($dispositivo->id_paziente) {
+
+            // Finestra temporale: entro 60 min dall'allarme fisico
+            $statiValidi  = ['in_attesa', 'allarme_attivo'];
+            $finestraRace = now()->subMinutes(60);
+
+            // Livello A: scomparto_numero
+            // FIX: usa '>' per priorità allarme_attivo, poi in_attesa, poi saltata
+            if ($numScomparto > 0) {
+                $assunzione = Assunzione::whereHas('somministrazione.terapia', function ($q) use ($dispositivo) {
+                    $q->where('id_paziente', $dispositivo->id_paziente);
+                })
+                ->where(function ($q) use ($statiValidi, $finestraRace) {
+                    $q->whereIn('stato', $statiValidi)
+                      ->orWhere(function ($q2) use ($finestraRace) {
+                          // Saltata dal marcaSaltateScadute ma allarme era stato inviato
+                          // (race condition: ESP32 ha erogato prima del timeout Laravel)
+                          $q2->where('stato', 'saltata')
+                             ->where('allarme_inviato', true)
+                             ->where('data_allarme', '>=', $finestraRace);
+                      });
+                })
+                ->where('scomparto_numero', $numScomparto)
+                ->orderByRaw("FIELD(stato,'allarme_attivo','in_attesa','saltata')")
                 ->orderBy('data_prevista')
                 ->first();
 
+                if ($assunzione) {
+                    $this->line("[MQTT] Livello A: trovata assunzione ID {$assunzione->id} per scomparto {$numScomparto}");
+                    Log::debug('gestisciErogazione: Trovata assunzione (Livello A)', ['assunzione_id' => $assunzione->id]);
+                }
+            }
+
+            // Livello B: id_farmaco nella terapia
+            if (!$assunzione && $idFarmaco > 0) {
+                $assunzione = Assunzione::whereHas('somministrazione.terapia', function ($q) use ($dispositivo, $idFarmaco) {
+                    $q->where('id_paziente', $dispositivo->id_paziente)
+                      ->where('id_farmaco', $idFarmaco);
+                })
+                ->where(function ($q) use ($statiValidi, $finestraRace) {
+                    $q->whereIn('stato', $statiValidi)
+                      ->orWhere(function ($q2) use ($finestraRace) {
+                          $q2->where('stato', 'saltata')
+                             ->where('allarme_inviato', true)
+                             ->where('data_allarme', '>=', $finestraRace);
+                      });
+                })
+                ->orderByRaw("FIELD(stato,'allarme_attivo','in_attesa','saltata')")
+                ->orderBy('data_prevista')
+                ->first();
+
+                if ($assunzione) {
+                    $this->line("[MQTT] Livello B: trovata assunzione ID {$assunzione->id} per farmaco #{$idFarmaco}");
+                    Log::debug('gestisciErogazione: Trovata assunzione (Livello B)', ['assunzione_id' => $assunzione->id]);
+                }
+            }
+
+            // Livello C: qualsiasi assunzione attiva del paziente
+            if (!$assunzione) {
+                $assunzione = Assunzione::whereHas('somministrazione.terapia', function ($q) use ($dispositivo) {
+                    $q->where('id_paziente', $dispositivo->id_paziente);
+                })
+                ->where(function ($q) use ($statiValidi, $finestraRace) {
+                    $q->whereIn('stato', $statiValidi)
+                      ->orWhere(function ($q2) use ($finestraRace) {
+                          $q2->where('stato', 'saltata')
+                             ->where('allarme_inviato', true)
+                             ->where('data_allarme', '>=', $finestraRace);
+                      });
+                })
+                ->orderByRaw("FIELD(stato,'allarme_attivo','in_attesa','saltata')")
+                ->orderBy('data_prevista')
+                ->first();
+
+                if ($assunzione) {
+                    $this->warn("[MQTT] Livello C (fallback): assunzione ID {$assunzione->id} (stato: {$assunzione->stato})");
+                    Log::debug('gestisciErogazione: Trovata assunzione (Livello C)', ['assunzione_id' => $assunzione->id]);
+                }
+            }
+
             if ($assunzione) {
                 $assunzione->update([
-                    'stato' => 'assunta',
-                    'data_erogazione' => $timestamp,
-                    'data_conferma' => $timestamp,
-                    'confermata_da' => $this->mappaMetodo($metodo),
-                    'id_dispositivo' => $dispositivo->id,
-                    'scomparto_numero' => $numScomparto ?: null,
-                    'allarme_inviato' => true,
-                    'data_allarme' => $assunzione->data_allarme ?? $timestamp,
-                    'apertura_forzata'     => strtoupper($metodo) === 'MQTT_DIRETTO',
+                    'stato'                 => 'assunta',
+                    'data_erogazione'       => $timestamp,
+                    'data_conferma'         => $timestamp,
+                    'confermata_da'         => $this->mappaMetodo($metodo),
+                    'id_dispositivo'        => $dispositivo->id,
+                    'scomparto_numero'      => $numScomparto ?: $assunzione->scomparto_numero,
+                    'allarme_inviato'       => true,
+                    'data_allarme'          => $assunzione->data_allarme ?? $timestamp,
+                    'apertura_forzata'      => strtoupper($metodo) === 'MQTT_DIRETTO',
                     'data_apertura_forzata' => strtoupper($metodo) === 'MQTT_DIRETTO' ? $timestamp : null,
                     'quantita_erogata'      => $quantitaRimanente,
                     'forzata_medico'        => strtoupper($metodo) === 'MQTT_DIRETTO',
                 ]);
+
+                $this->info("[EROGAZIONE] Assunzione ID {$assunzione->id} → assunta (metodo: {$metodo})");
+                Log::debug('gestisciErogazione: Assunzione aggiornata', ['assunzione_id' => $assunzione->id]);
+            } else {
+                $this->warn("[MQTT] Nessuna assunzione in_attesa/allarme_attivo trovata per paziente {$dispositivo->id_paziente}");
+                Log::warning('gestisciErogazione: Nessuna assunzione trovata da aggiornare', ['dispositivo_id' => $dispositivo->id]);
             }
         }
 
-        $nome = $payload['nome_farmaco'] ?? "Farmaco #{$idFarmaco}";
+        $nome = $payload['nome_farmaco'] ?? ($idFarmaco > 0 ? "Farmaco #{$idFarmaco}" : 'Farmaco');
 
         $this->creaNotifica(
             (int) $dispositivo->id_paziente,
@@ -227,6 +337,59 @@ class MqttListen extends Command
         }
 
         $this->line("[MAPPA] Sincronizzata per {$dispositivo->codice_seriale}.");
+    }
+
+    private function gestisciPillolaMancata(Dispositivo $dispositivo, array $payload): void
+    {
+        $idFarmaco    = (int) ($payload['id_farmaco'] ?? 0);
+        $numScomparto = (int) ($payload['scomparto'] ?? $payload['scomparto_usato'] ?? 0);
+        $nomeFarmaco  = $payload['nome_farmaco'] ?? "Farmaco #{$idFarmaco}";
+
+        // Cerca l'assunzione con allarme_attivo o in_attesa corrispondente
+        $assunzione = null;
+
+        if ($dispositivo->id_paziente) {
+            // Prima per scomparto_numero
+            if ($numScomparto > 0) {
+                $assunzione = Assunzione::whereHas('somministrazione.terapia', function ($q) use ($dispositivo) {
+                    $q->where('id_paziente', $dispositivo->id_paziente);
+                })
+                ->whereIn('stato', ['in_attesa', 'allarme_attivo'])
+                ->where('scomparto_numero', $numScomparto)
+                ->orderByRaw("FIELD(stato,'allarme_attivo','in_attesa')")
+                ->orderBy('data_prevista')
+                ->first();
+            }
+
+            // Poi per id_farmaco nella terapia
+            if (!$assunzione && $idFarmaco > 0) {
+                $assunzione = Assunzione::whereHas('somministrazione.terapia', function ($q) use ($dispositivo, $idFarmaco) {
+                    $q->where('id_paziente', $dispositivo->id_paziente)
+                      ->where('id_farmaco', $idFarmaco);
+                })
+                ->whereIn('stato', ['in_attesa', 'allarme_attivo'])
+                ->orderByRaw("FIELD(stato,'allarme_attivo','in_attesa')")
+                ->orderBy('data_prevista')
+                ->first();
+            }
+        }
+
+        if ($assunzione) {
+            $assunzione->update([
+                'stato'       => 'saltata',
+                'note_evento' => "Timeout segnalato dall'ESP32: pillola non presa",
+            ]);
+            $this->warn("[PILLOLA_MANCATA] Assunzione ID {$assunzione->id} → saltata (segnalato da ESP32)");
+        } else {
+            $this->warn("[PILLOLA_MANCATA] Nessuna assunzione attiva trovata per {$nomeFarmaco}");
+        }
+
+        $this->creaNotifica(
+            (int) $dispositivo->id_paziente,
+            'Pillola non presa',
+            "La pillola \"${nomeFarmaco}\" non è stata presa entro il tempo previsto.",
+            'allarme'
+        );
     }
 
     private function gestisciRichiestaRicarica(Dispositivo $dispositivo, array $payload): void
