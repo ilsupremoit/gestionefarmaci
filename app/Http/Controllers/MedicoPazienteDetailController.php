@@ -45,16 +45,12 @@ class MedicoPazienteDetailController extends Controller
         abort_if(!in_array($tipo, $tipiValidi), 404);
 
         $q = Assunzione::whereHas('somministrazione.terapia', fn($q) => $q->where('id_paziente', $paziente->id))
-            ->with('somministrazione.terapia.farmaco', 'dispositivo', 'medicoForzante');
+            ->with('somministrazione.terapia.farmaco', 'dispositivo');
 
         match ($tipo) {
             'prese'   => $q->whereIn('stato', ['assunta', 'erogata']),
             'saltate' => $q->whereIn('stato', ['saltata', 'non_ritirata']),
-            'forzate' => $q->where(function ($sub) {
-                $sub->where('forzata_medico', true)
-                    ->orWhere('apertura_forzata', true)
-                    ->orWhere('stato', 'apertura_forzata');
-            }),
+            'forzate' => $q->where('apertura_forzata', true),
             'oggi'    => $q->whereDate('data_prevista', today()),
         };
 
@@ -262,7 +258,7 @@ class MedicoPazienteDetailController extends Controller
         return [
             'prese'   => $base()->whereIn('stato', ['assunta', 'erogata'])->count(),
             'saltate' => $base()->whereIn('stato', ['saltata', 'non_ritirata'])->count(),
-            'forzate' => $base()->where(fn($q) => $q->where('apertura_forzata', true))->count(),
+            'forzate' => $base()->where('apertura_forzata', true)->count(),
             'oggi'    => $base()->whereDate('data_prevista', today())->count(),
         ];
     }

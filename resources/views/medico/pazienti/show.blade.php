@@ -98,25 +98,6 @@
                 @else
                     <span class="device-badge offline"><span class="dot gray"></span>{{ ucfirst($dispositivo->stato) }}</span>
                 @endif
-
-                <form method="POST" action="{{ route('medico.pazienti.eroga', $paziente->id) }}" style="display:inline;"
-                      onsubmit="return confirm('Confermi l\'erogazione forzata?')">
-                    @csrf
-                    <button type="submit" class="btn-iot btn-eroga"><i data-lucide="pill"></i> Eroga ora</button>
-                </form>
-
-                @if($hasAlarm)
-                    <form method="POST" action="{{ route('medico.pazienti.allarme', $paziente->id) }}" style="display:inline;">
-                        @csrf <input type="hidden" name="attiva" value="0"/>
-                        <button type="submit" class="btn-iot btn-alarm-off"><i data-lucide="bell-off"></i> Disattiva allarme</button>
-                    </form>
-                @else
-                    <form method="POST" action="{{ route('medico.pazienti.allarme', $paziente->id) }}" style="display:inline;"
-                          onsubmit="return confirm('Attivare l\'allarme?')">
-                        @csrf <input type="hidden" name="attiva" value="1"/>
-                        <button type="submit" class="btn-iot btn-alarm-on"><i data-lucide="bell-ring"></i> Attiva allarme</button>
-                    </form>
-                @endif
             @else
                 <span class="device-badge offline"><span class="dot gray"></span>Nessun dispositivo</span>
             @endif
@@ -139,11 +120,6 @@
         <a href="{{ route('medico.pazienti.storico', [$paziente->id, 'saltate']) }}" class="stat-pill red stat-link">
             <div class="val">{{ $stats['saltate'] }}</div>
             <div class="lbl">Saltate</div>
-            <div class="stat-hint">Vedi storico →</div>
-        </a>
-        <a href="{{ route('medico.pazienti.storico', [$paziente->id, 'forzate']) }}" class="stat-pill orange stat-link">
-            <div class="val">{{ $stats['forzate'] }}</div>
-            <div class="lbl">Forzate medico</div>
             <div class="stat-hint">Vedi storico →</div>
         </a>
     </div>

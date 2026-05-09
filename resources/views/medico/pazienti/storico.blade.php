@@ -413,16 +413,6 @@
                     'color' => 'red',
                     'icon' => 'x-circle',
                 ],
-                'attesa' => [
-                    'label' => 'In attesa',
-                    'color' => 'yellow',
-                    'icon' => 'clock',
-                ],
-                'forzate' => [
-                    'label' => 'Erogazioni forzate',
-                    'color' => 'orange',
-                    'icon' => 'alert-triangle',
-                ],
             ];
         @endphp
 
@@ -460,7 +450,6 @@
                         @if($tipo === 'prese')
                             <th>Erogata alle</th>
                             <th>Confermata da</th>
-                            <th>Qta rimasta</th>
                             <th>Scomparto</th>
                         @elseif($tipo === 'saltate')
                             <th>Note</th>
@@ -471,8 +460,7 @@
                             <th>Azione medico</th>
                         @elseif($tipo === 'forzate')
                             <th>Erogata alle</th>
-                            <th>Medico</th>
-                            <th>Qta rimasta</th>
+                            <th>Tipo</th>
                             <th>Scomparto</th>
                         @elseif($tipo === 'oggi')
                             <th>Stato attuale</th>
@@ -520,7 +508,7 @@
                                     {{ statoLabel($a->stato) }}
                                 </span>
 
-                                @if($a->forzata_medico || $a->apertura_forzata)
+                                @if($a->apertura_forzata)
                                     <br>
                                     <span class="forzata-tag" style="margin-top:4px;">
                                         <i data-lucide="alert-triangle" style="width:11px;height:11px;"></i>
@@ -547,19 +535,6 @@
                                             default => $conf ?? '—',
                                         } }}
                                     </span>
-                                </td>
-
-                                <td>
-                                    @if($a->quantita_erogata !== null)
-                                        <span style="font-weight:600;color:var(--green);">
-                                            {{ $a->quantita_erogata }}
-                                        </span>
-                                        <span style="font-size:11px;color:var(--muted);">
-                                            rimaste
-                                        </span>
-                                    @else
-                                        —
-                                    @endif
                                 </td>
 
                                 <td style="font-size:12px;color:var(--muted);">
@@ -628,28 +603,7 @@
                                 </td>
 
                                 <td style="font-size:12px;">
-                                    @if($a->medicoForzante)
-                                        Dr. {{ $a->medicoForzante->cognome }}
-                                    @elseif($a->forzata_medico)
-                                        <span style="color:var(--muted);">
-                                            Medico storico
-                                        </span>
-                                    @else
-                                        —
-                                    @endif
-                                </td>
-
-                                <td>
-                                    @if($a->quantita_erogata !== null)
-                                        <span style="font-weight:600;color:var(--green);">
-                                            {{ $a->quantita_erogata }}
-                                        </span>
-                                        <span style="font-size:11px;color:var(--muted);">
-                                            rimaste
-                                        </span>
-                                    @else
-                                        —
-                                    @endif
+                                    <span style="color:var(--muted);">Erogazione forzata</span>
                                 </td>
 
                                 <td style="font-size:12px;color:var(--muted);">

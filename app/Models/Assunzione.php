@@ -23,10 +23,6 @@ class Assunzione extends Model
         'data_apertura_forzata',
         'note_evento',
         'scomparto_numero',
-        // nuovi
-        'forzata_medico',
-        'id_medico_forzante',
-        'quantita_erogata',
     ];
 
     protected $casts = [
@@ -37,10 +33,8 @@ class Assunzione extends Model
         'data_apertura_forzata' => 'datetime',
         'allarme_inviato'       => 'boolean',
         'apertura_forzata'      => 'boolean',
-        'forzata_medico'        => 'boolean',
     ];
 
     public function somministrazione() { return $this->belongsTo(Somministrazione::class, 'id_somministrazione'); }
     public function dispositivo()      { return $this->belongsTo(Dispositivo::class, 'id_dispositivo'); }
-    public function medicoForzante()   { return $this->belongsTo(User::class, 'id_medico_forzante'); }
 }

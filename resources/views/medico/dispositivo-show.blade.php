@@ -199,20 +199,7 @@
                 </button>
             </div>
 
-            <div style="margin-top:18px;padding-top:14px;border-top:1px solid var(--border);">
-                <div style="font-size:13px;font-weight:600;margin-bottom:8px;display:flex;align-items:center;gap:8px;">
-                    <i data-lucide="alarm-clock"></i>
-                    Imposta sveglia
-                </div>
 
-                <div class="inline-form">
-                    <input type="time" id="input-sveglia" value="{{ $dispositivo->sveglia_impostata ? substr($dispositivo->sveglia_impostata,0,5) : '08:00' }}"/>
-                    <button class="cmd-btn success" style="flex-direction:row;padding:9px 14px;" onclick="impostaSveglia()">
-                        <i data-lucide="check"></i>
-                        Imposta
-                    </button>
-                </div>
-            </div>
 
             <div style="margin-top:18px;padding:12px;background:rgba(255,255,255,.02);border:1px solid var(--border);border-radius:8px;">
                 <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:8px;display:flex;align-items:center;gap:8px;">

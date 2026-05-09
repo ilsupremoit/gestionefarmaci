@@ -289,8 +289,7 @@ class MqttListen extends Command
                     'data_allarme'          => $assunzione->data_allarme ?? $timestamp,
                     'apertura_forzata'      => strtoupper($metodo) === 'MQTT_DIRETTO',
                     'data_apertura_forzata' => strtoupper($metodo) === 'MQTT_DIRETTO' ? $timestamp : null,
-                    'quantita_erogata'      => $quantitaRimanente,
-                    'forzata_medico'        => strtoupper($metodo) === 'MQTT_DIRETTO',
+                    'note_evento'           => "Erogata via {$metodo}.",
                 ]);
 
                 $this->info("[EROGAZIONE] Assunzione ID {$assunzione->id} → assunta (metodo: {$metodo})");
